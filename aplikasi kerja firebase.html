@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-[#F8FAFC] antialiased">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MICELL Ops">
+  <meta name="theme-color" content="#09090B">
+  <title>MICELL — Sistem Operasional iPhone v4.1 (Firebase Realtime)</title>
+  <script>
+    (function(){
+      const origWarn = console.warn;
+      console.warn = function(...args) {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+        return origWarn.apply(console, args);
+      };
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #09090B;
+      background-color: #F8FAFC;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .pb-safe { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
+    .nav-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+    }
+    /* Warna khusus stok Hilmy (Ungu) vs Owner (Putih) */
+    .row-hilmy {
+      background-color: #F3E8FF !important;
+      border-left: 4px solid #9333EA;
+    }
+    .row-hilmy:hover {
+      background-color: #E9D5FF !important;
+    }
+    .row-owner {
+      background-color: #FFFFFF !important;
+      border-left: 4px solid #CBD5E1;
+    }
+    .row-owner:hover {
+      background-color: #F8FAFC !important;
+    }
+    /* Grafik Lingkaran KPI 0-100% */
+    .circular-chart { display: block; margin: 0 auto; max-width: 92px; max-height: 92px; }
+    .circle-bg { fill: none; stroke: #E2E8F0; stroke-width: 3.8; }
+    .circle { fill: none; stroke-width: 3.8; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
+    .percentage { fill: #09090B; font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; font-weight: 700; text-anchor: middle; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .sync-pulse { animation: pulse-dot 1.8s infinite; }
+  </style>
+</head>
+<body class="h-full flex flex-col lg:flex-row">
+
+  <!-- HEADER HP (iPhone & Android) -->
+  <header class="lg:hidden sticky top-0 z-30 bg-zinc-950 text-white px-4 py-3 flex items-center justify-between border-b border-zinc-800">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-7 h-7 bg-white text-zinc-950 mono font-bold text-sm flex items-center justify-center rounded">M</div>
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-bold tracking-wider">MICELL OPS</span>
+          <span id="m-sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+        </div>
+        <div id="m-role-badge" class="text-[10px] text-amber-300 mono font-semibold">AKUN: SA MICELL (B2C)</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button type="button" onclick="app.pullCloud(false)" class="bg-zinc-900 text-zinc-300 text-[11px] border border-zinc-700 rounded px-2 py-1.5 font-medium">↻ Sync</button>
+      <button type="button" id="m-btn-role" onclick="app.openRoleModal()" class="bg-zinc-900 text-white text-[11px] border border-zinc-700 rounded px-2.5 py-1.5 font-medium">🔑 Akun</button>
+      <button type="button" id="m-btn-top-sale" onclick="app.openSaleModal()" class="bg-white text-zinc-950 text-xs font-bold px-2.5 py-1.5 rounded">+ Jual</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR LAPTOP/PC -->
+  <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-zinc-950 text-white border-r border-zinc-800">
+    <div class="p-5 border-b border-zinc-800 flex items-center space-x-3">
+      <div class="w-8 h-8 bg-white text-zinc-950 mono font-bold text-base flex items-center justify-center rounded">M</div>
+      <div>
+        <div class="text-sm font-bold tracking-wider">MICELL SYSTEM</div>
+        <div class="text-[11px] text-emerald-400 mono">FIREBASE LIVE v4.1</div>
+      </div>
+    </div>
+
+    <div class="p-4 border-b border-zinc-900 bg-zinc-900/50 space-y-2">
+      <div class="flex items-center justify-between text-[11px]">
+        <div class="flex items-center gap-1.5">
+          <span id="d-sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+          <span id="d-sync-text" class="text-zinc-300 mono text-[10px]">Menghubungkan...</span>
+        </div>
+        <button type="button" onclick="app.pullCloud(false)" class="text-[10px] mono text-zinc-300 hover:text-white underline">Refresh Cloud</button>
+      </div>
+      <div class="flex items-center justify-between pt-1">
+        <span class="text-[10px] mono uppercase text-zinc-400">Status Sesi Aktif</span>
+        <span id="d-role-pill" class="text-[10px] mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">SA MICELL</span>
+      </div>
+      <button type="button" id="d-btn-role" onclick="app.openRoleModal()" class="w-full bg-zinc-950 hover:bg-zinc-900 text-white text-xs border border-zinc-700 rounded px-3 py-2 font-medium flex items-center justify-center gap-1.5 transition">
+        <span>🔑 Ganti Akun (SA / Hilmy / Owner)</span>
+      </button>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1 text-xs font-medium">
+      <button type="button" onclick="app.go('dashboard')" id="dnav-dashboard" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center bg-white text-zinc-950 font-bold">
+        <span>1. Ringkasan & KPI</span>
+      </button>
+      <button type="button" onclick="app.go('stock')" id="dnav-stock" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <span>2. Stok Unit iPhone</span>
+        <span id="badge-stock" class="mono bg-zinc-800 text-white px-1.5 py-0.5 rounded text-[10px]">0</span>
+      </button>
+      <button type="button" onclick="app.go('sales')" id="dnav-sales" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <span id="dnav-sales-label">3. Input Penjualan SA</span>
+      </button>
+      <button type="button" onclick="app.go('leads')" id="dnav-leads" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <span>4. Prospek (Lead) & B2B</span>
+        <span id="badge-leads" class="mono bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
+      </button>
+      <button type="button" onclick="app.go('tasks')" id="dnav-tasks" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <span id="dnav-tasks-label">5. Tugas Operasional</span>
+        <span id="badge-tasks" class="mono bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px]">0</span>
+      </button>
+      <button type="button" onclick="app.go('settings')" id="dnav-settings" class="w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center text-zinc-400 hover:bg-zinc-900 hover:text-white">
+        <span>6. Absensi Marki, KPI & Log</span>
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-zinc-900 space-y-2">
+      <button type="button" onclick="app.openCheckinModal()" class="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white font-semibold text-xs rounded flex items-center justify-center gap-1.5">
+        <span>📍 Absen Check-In (Marki)</span>
+      </button>
+      <button type="button" id="d-btn-wa-report" onclick="app.sendWhatsAppReport()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded flex items-center justify-center gap-1.5">
+        <span>Kirim Laporan ke WA</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- AREA KERJA UTAMA -->
+  <main class="flex-1 lg:pl-64 pb-safe">
+    <!-- Bar Atas -->
+    <div class="bg-white border-b border-slate-200 px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h1 id="page-title" class="text-base lg:text-lg font-bold">Ringkasan Operasional MICELL</h1>
+        <p id="page-desc" class="text-xs text-slate-500">Stok Putih = Owner | Stok Ungu = Hilmy • Firebase Realtime Sync Aktif.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" onclick="app.openCheckinModal()" class="px-3 py-2 text-xs font-semibold rounded bg-purple-700 text-white hover:bg-purple-800">
+          📍 Check-In Absen
+        </button>
+        <button type="button" id="top-btn-add-stock" onclick="app.openStockModal()" class="hidden px-3 py-2 text-xs font-semibold border border-slate-300 rounded bg-white hover:bg-slate-50">
+          + Tambah Stok
+        </button>
+        <button type="button" id="top-btn-add-sale" onclick="app.openSaleModal()" class="px-3.5 py-2 text-xs font-semibold rounded bg-zinc-950 text-white hover:bg-zinc-800">
+          + Input Penjualan
+        </button>
+        <button type="button" id="top-btn-wa" onclick="app.sendWhatsAppReport()" class="hidden lg:hidden px-3 py-2 text-xs font-semibold rounded bg-emerald-600 text-white">
+          WA Laporan
+        </button>
+      </div>
+    </div>
+
+    <!-- Pesan Notifikasi -->
+    <div id="alert-box" class="hidden mx-4 lg:mx-8 mt-4 p-3 rounded border text-xs font-medium flex items-center justify-between">
+      <span id="alert-text"></span>
+      <button type="button" onclick="app.hideAlert()" class="font-bold ml-3">✕</button>
+    </div>
+
+    <!-- Konten Dinamis -->
+    <div id="main-content" class="p-4 lg:p-8 space-y-6"></div>
+  </main>
+
+  <!-- MENU BAWAH HP (iPhone & Android) -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-zinc-950 text-zinc-400 border-t border-zinc-800 grid grid-cols-6 nav-safe">
+    <button type="button" onclick="app.go('dashboard')" id="mnav-dashboard" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-white bg-zinc-900 border-t-2 border-white">
+      <span class="mono text-xs font-bold">01</span><span>Beranda</span>
+    </button>
+    <button type="button" onclick="app.go('stock')" id="mnav-stock" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-zinc-400">
+      <span class="mono text-xs font-bold">02</span><span>Stok</span>
+    </button>
+    <button type="button" onclick="app.go('sales')" id="mnav-sales" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-zinc-400">
+      <span class="mono text-xs font-bold">03</span><span>Jualan</span>
+    </button>
+    <button type="button" onclick="app.go('leads')" id="mnav-leads" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-zinc-400">
+      <span class="mono text-xs font-bold">04</span><span>Lead</span>
+    </button>
+    <button type="button" onclick="app.go('tasks')" id="mnav-tasks" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-zinc-400">
+      <span class="mono text-xs font-bold">05</span><span>Tugas</span>
+    </button>
+    <button type="button" onclick="app.go('settings')" id="mnav-settings" class="py-2.5 flex flex-col items-center justify-center text-[10px] font-medium text-zinc-400">
+      <span class="mono text-xs font-bold">06</span><span>Absen/Atur</span>
+    </button>
+  </nav>
+
+  <!-- ==================== MODAL 0: GANTI AKUN AKSES ==================== -->
+  <div id="modal-role" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold">Pilih Mode Akun Kerja MICELL</h3>
+          <p class="text-[11px] text-slate-500">SA MICELL langsung masuk tanpa PIN. Hilmy & Owner dilindungi PIN otorisasi.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-role')" class="font-bold text-slate-400">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 border border-slate-300 rounded-lg bg-slate-50 flex items-center justify-between">
+          <div>
+            <div class="font-bold">1. Akun SA MICELL (Sales Associate B2C)</div>
+            <div class="text-[11px] text-slate-500">Lihat Stok (Kode, Model, Status), Input Penjualan B2C, Tugas SA & KPI.</div>
+          </div>
+          <button type="button" onclick="app.switchRole('SA')" class="px-3 py-2 bg-emerald-600 text-white font-bold rounded ml-2">Masuk SA</button>
+        </div>
+
+        <div class="p-3 border border-slate-300 rounded-lg bg-purple-100/50 space-y-2">
+          <div>
+            <div class="font-bold text-purple-800">2. Akun LEADER — HILMY</div>
+            <div class="text-[11px] text-slate-600">Akses penuh Stok (Ungu/Putih), Penjualan & Retur, Lead, Tugas Hilmy & KPI.</div>
+          </div>
+          <div class="flex gap-2">
+            <input type="password" id="input-pin-hilmy" onkeydown="if(event.key==='Enter'){event.preventDefault();app.switchRole('OPERATOR');}" placeholder="Masukkan PIN Leader Hilmy" class="flex-1 border border-slate-300 rounded px-2.5 py-2 mono bg-white">
+            <button type="button" onclick="app.switchRole('OPERATOR')" class="px-4 py-2 bg-purple-700 text-white font-bold rounded">Masuk Hilmy</button>
+          </div>
+        </div>
+
+        <div class="p-3 border border-slate-300 rounded-lg bg-slate-100 space-y-2">
+          <div>
+            <div class="font-bold text-zinc-950">3. Akun OWNER MICELL</div>
+            <div class="text-[11px] text-slate-600">Kontrol penuh, Konfirmasi Insentif Sales, Ubah Target KPI, QC Retur & Audit Log.</div>
+          </div>
+          <div class="flex gap-2">
+            <input type="password" id="input-pin-owner" onkeydown="if(event.key==='Enter'){event.preventDefault();app.switchRole('OWNER');}" placeholder="Masukkan PIN Owner" class="flex-1 border border-slate-300 rounded px-2.5 py-2 mono bg-white">
+            <button type="button" onclick="app.switchRole('OWNER')" class="px-4 py-2 bg-zinc-950 text-white font-bold rounded">Masuk Owner</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL ABSENSI MARKI TRACK (JAM & GPS) ==================== -->
+  <div id="modal-checkin" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold">📍 Absensi Kerja Marki Track</h3>
+          <p class="text-[11px] text-slate-500">Merekam jam check-in real-time dan titik lokasi GPS Google Maps.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-checkin')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form onsubmit="app.submitCheckinForm(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1">Nama Lengkap / Panggilan *</label>
+          <input id="checkin-name" required placeholder="Contoh: Hilmy / Rian SA" class="w-full border border-slate-300 rounded px-2.5 py-2 font-semibold">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Keterangan Shift / Lokasi</label>
+          <input id="checkin-note" placeholder="Contoh: Masuk Pagi di Toko / COD Luar" class="w-full border border-slate-300 rounded px-2.5 py-2">
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-checkin')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" id="btn-submit-checkin" class="px-4 py-2 bg-purple-700 text-white font-bold rounded">📍 Rekam Jam & GPS Sekarang</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL TAMBAH TUGAS (OWNER / HILMY / SA) ==================== -->
+  <div id="modal-task" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold">Tambah Tugas Operasional Baru</h3>
+          <p class="text-[11px] text-slate-500">Otomatis tersinkronisasi ke Firebase Cloud & muncul di HP penerima tugas.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-task')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form onsubmit="app.submitTaskForm(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="task-send-wa" value="false">
+        <div>
+          <label class="block font-semibold mb-1">Ditujukan Untuk Akun *</label>
+          <select id="task-assignee" class="w-full border border-slate-300 rounded px-2.5 py-2 font-bold">
+            <option value="OPERATOR">LEADER — HILMY</option>
+            <option value="SA">TIM SALES — SA MICELL</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Instruksi Tugas *</label>
+          <input id="task-title" required placeholder="Contoh: Cek fisik iPhone 15 Pro & kirim video ke grup" class="w-full border border-slate-300 rounded px-2.5 py-2">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Batas Waktu (Deadline) *</label>
+          <input id="task-deadline" required value="Hari ini 17:00" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-task')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-zinc-950 text-white font-semibold rounded">Simpan & Kirim Tugas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL KONFIRMASI INSENTIF & PENJUALAN (KHUSUS OWNER) ==================== -->
+  <div id="modal-incentive" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 id="inc-modal-title" class="text-sm font-bold">Konfirmasi Penjualan & Input Insentif</h3>
+          <p id="inc-modal-sub" class="text-[11px] text-slate-500">Otoritas Owner untuk memvalidasi penjualan & komisi KPI sales.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-incentive')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form onsubmit="app.submitIncentiveForm(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="inc-tx-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Harga Deal Sah (Rp) *</label>
+            <input type="number" id="inc-deal-price" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-bold">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Nominal Insentif Sales (Rp) *</label>
+            <input type="number" id="inc-amount" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-bold text-emerald-700">
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-incentive')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 text-white font-bold rounded">✓ Setujui Penjualan & Insentif</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL UBAH TARGET KPI (KHUSUS OWNER) ==================== -->
+  <div id="modal-target" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold">Atur Target Penjualan & KPI Bulanan</h3>
+          <p class="text-[11px] text-slate-500">Perubahan target langsung memperbarui grafik lingkaran 0–100% di semua HP.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-target')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form onsubmit="app.submitTargetForm(event)" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Target KPI SA MICELL (Unit)</label>
+            <input type="number" min="1" id="tgt-kpi-sa" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-bold">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Target KPI Leader Hilmy (Unit)</label>
+            <input type="number" min="1" id="tgt-kpi-hilmy" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-bold">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Target Toko B2C (Unit)</label>
+            <input type="number" min="1" id="tgt-b2c" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Target Toko B2B (Unit)</label>
+            <input type="number" min="1" id="tgt-b2b" required class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-target')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-zinc-950 text-white font-bold rounded">Simpan Target</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL TAMBAH PROSPEK (LEAD) ==================== -->
+  <div id="modal-lead" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold">Tambah Prospek (Lead) Baru</h3>
+          <p class="text-[11px] text-slate-500">Catat calon pembeli untuk di-follow up via WhatsApp.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-lead')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form onsubmit="app.submitLeadForm(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1">Nama Calon Pembeli / Toko *</label>
+          <input id="lead-name" required placeholder="Contoh: Kak Nanda" class="w-full border border-slate-300 rounded px-2.5 py-2">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Nomor WA (Awali 628...) *</label>
+            <input id="lead-phone" required value="628" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Sumber Info</label>
+            <input id="lead-source" value="WA / IG / TikTok" class="w-full border border-slate-300 rounded px-2.5 py-2">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Unit iPhone yang Dicari *</label>
+          <input id="lead-interest" required placeholder="Contoh: iPhone 15 Pro 256GB Natural" class="w-full border border-slate-300 rounded px-2.5 py-2">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Catatan Prospek</label>
+          <input id="lead-note" placeholder="Contoh: Mau tukar tambah dari iPhone 12" class="w-full border border-slate-300 rounded px-2.5 py-2">
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-lead')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-zinc-950 text-white font-semibold rounded">Simpan Prospek</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 1: TAMBAH / EDIT STOK IPHONE -->
+  <div id="modal-stock" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 id="modal-stock-title" class="text-sm font-bold">Tambah Unit iPhone Baru</h3>
+          <p id="modal-stock-sub" class="text-[11px] text-slate-500">Warna tabel otomatis mengikuti penginput awal.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-stock')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form id="form-stock" onsubmit="app.saveStockForm(event)" class="space-y-3 text-xs">
+        <input type="hidden" name="edit_mode" id="stk-edit-mode" value="false">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Kode Unit (Unik) *</label>
+            <input name="unit_id" id="stk-unitid" required="" class="w-full border border-slate-300 rounded px-2.5 py-2 mono uppercase bg-slate-50">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Kapasitas *</label>
+            <select name="capacity" id="stk-capacity" class="w-full border border-slate-300 rounded px-2 py-2 mono">
+              <option>128GB</option><option>256GB</option><option>512GB</option><option>1TB</option><option>64GB</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Tipe iPhone *</label>
+            <input name="model" id="stk-model" required="" placeholder="iPhone 15 Pro Max" class="w-full border border-slate-300 rounded px-2.5 py-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Warna *</label>
+            <input name="color" id="stk-color" required="" placeholder="Natural Titanium" class="w-full border border-slate-300 rounded px-2.5 py-2">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Kondisi *</label>
+            <select name="condition" id="stk-condition" class="w-full border border-slate-300 rounded px-2 py-2">
+              <option value="Ex iBox Mulus">Ex iBox Mulus</option>
+              <option value="Like New Fullset">Like New Fullset</option>
+              <option value="Ex Inter All Op">Ex Inter All Op</option>
+              <option value="Baru (New Sealed)">Baru (New Sealed)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Asal Barang *</label>
+            <input name="source" id="stk-source" required="" placeholder="Tukar Tambah / Supplier" class="w-full border border-slate-300 rounded px-2.5 py-2">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Harga Modal (Rp) *</label>
+            <input name="cost" id="stk-cost" type="number" required="" placeholder="14500000" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Harga Jual (Rp) *</label>
+            <input name="price" id="stk-price" type="number" required="" placeholder="15800000" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Status Unit *</label>
+            <select name="status" id="stk-status" class="w-full border border-slate-300 rounded px-2 py-2 mono font-semibold">
+              <option value="AVAILABLE">AVAILABLE (Siap)</option>
+              <option value="HELD">HELD (Booking/DP)</option>
+              <option value="SOLD">SOLD (Terjual)</option>
+              <option value="RETURN_PENDING">RETURN_PENDING (QC)</option>
+              <option value="RETURNED_AVAILABLE">RETURNED_AVAILABLE</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Pemegang / Warna Tabel</label>
+            <select name="holder" id="stk-holder" class="w-full border border-slate-300 rounded px-2 py-2 font-semibold">
+              <option value="OPERATOR">UNGU — Stok Hilmy</option>
+              <option value="OWNER">PUTIH — Stok Owner</option>
+            </select>
+          </div>
+        </div>
+        <p id="stk-holder-lock-note" class="text-[11px] text-purple-700 font-medium hidden">
+          * Warna tabel dikunci sesuai penginput awal agar tidak mengubah siapa pembawa stok.
+        </p>
+        <label class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" name="priority" id="stk-priority" class="rounded">
+          <span>Tandai sebagai <b>Stok Prioritas</b> (Wajib cepat laku)</span>
+        </label>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-stock')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-zinc-950 text-white font-semibold rounded">Simpan Data Stok</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CATAT / EDIT PENJUALAN -->
+  <div id="modal-sale" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg max-w-md w-full p-5 space-y-4 border border-slate-200 my-8">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div>
+          <h3 id="modal-sale-title" class="text-sm font-bold">Catat Penjualan Unit</h3>
+          <p id="modal-sale-sub" class="text-[11px] text-slate-500">Bisa diedit manual status & angkanya oleh Owner maupun Hilmy.</p>
+        </div>
+        <button type="button" onclick="app.closeModal('modal-sale')" class="font-bold text-slate-400">✕</button>
+      </div>
+      <form id="form-sale" onsubmit="app.saveSaleForm(event)" class="space-y-3 text-xs">
+        <input type="hidden" name="edit_tx_id" id="sale-edit-txid" value="">
+        <div id="sale-unit-select-wrap">
+          <label class="block font-semibold mb-1">Pilih Unit iPhone *</label>
+          <select name="unit_id" id="sale-unit-picker" onchange="app.updateSaleDefaultPrice(this.value)" class="w-full border border-slate-300 rounded px-2.5 py-2 mono"></select>
+        </div>
+        <div id="sale-price-row" class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Jalur Penjualan *</label>
+            <select name="channel" id="sale-channel" class="w-full border border-slate-300 rounded px-2.5 py-2 font-semibold">
+              <option value="B2C">B2C (Pembeli Langsung)</option>
+              <option value="B2B">B2B (Sesama Bakul/Toko)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Harga Deal (Rp) *</label>
+            <input name="price" id="sale-price-field" type="number" class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-bold">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Nama Pembeli *</label>
+            <input name="buyer" id="sale-buyer" required="" placeholder="Contoh: Mas Andi" class="w-full border border-slate-300 rounded px-2.5 py-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">PIC / Nama Sales *</label>
+            <input name="pic" id="sale-pic" required="" placeholder="Hilmy / Nama SA" class="w-full border border-slate-300 rounded px-2.5 py-2 font-semibold">
+          </div>
+        </div>
+        <div id="sale-extra-costs" class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Potongan/Diskon (Rp)</label>
+            <input name="discount" id="sale-discount" type="number" value="0" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Ongkir/Biaya Lain (Rp)</label>
+            <input name="fee" id="sale-fee" type="number" value="0" class="w-full border border-slate-300 rounded px-2.5 py-2 mono">
+          </div>
+        </div>
+        <div id="sale-status-wrap">
+          <label class="block font-semibold mb-1">Status Transaksi (Manual) *</label>
+          <select name="status" id="sale-status" class="w-full border border-slate-300 rounded px-2.5 py-2 mono font-semibold">
+            <option value="COMPLETED">COMPLETED (Sah Terjual)</option>
+            <option value="PENDING_PAYMENT">PENDING_PAYMENT (Menunggu Konfirmasi Owner)</option>
+            <option value="RETURN_REQUESTED">RETURN_REQUESTED (Proses Retur)</option>
+            <option value="RETURNED">RETURNED (Sudah Diretur)</option>
+            <option value="CANCELLED">CANCELLED (Dibatalkan)</option>
+          </select>
+        </div>
+        <div id="sale-owner-incentive-wrap" class="p-3 rounded bg-slate-100 border border-slate-300 space-y-2 hidden">
+          <label class="block font-bold">Nominal Insentif Sales (Rp) — Khusus Owner</label>
+          <input name="incentive" id="sale-incentive" type="number" value="100000" class="w-full border border-slate-300 rounded px-2.5 py-1.5 mono font-bold bg-white">
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="incentive_approved" id="sale-inc-approved" class="rounded">
+            <span>Setujui & Masukkan ke Perhitungan KPI Penggajian Sales</span>
+          </label>
+        </div>
+        <label class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" name="handed" id="sale-handed" checked="" class="rounded">
+          <span>Barang fisik sudah diserahkan ke pembeli</span>
+        </label>
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="app.closeModal('modal-sale')" class="px-3 py-2 border rounded">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-zinc-950 text-white font-semibold rounded">Simpan Transaksi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const DB_KEY = 'MICELL_READY_APP_V4_FIREBASE';
+    // LINK DATABASE FIREBASE RESMI MILIKMU:
+    const FIREBASE_DB_URL = 'https://aplikasi-kerja-tim-default-rtdb.asia-southeast1.firebasedatabase.app/micell_ops_db.json';
+
+    function getTodayLabel() {
+      return new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatUnitLabel(u) {
+      if (!u) return '-';
+      const m = String(u.model || '').trim();
+      const c = String(u.capacity || '').trim();
+      if (!c || m.toLowerCase().includes(c.toLowerCase())) return m;
+      return m + ' ' + c;
+    }
+
+    function defaultData() {
+      const today = getTodayLabel();
+      return {
+        lastUpdated: 0, // PENTING: Disetel 0 agar perangkat baru TIDAK PERNAH menimpa data Cloud!
+        role: 'SA',
+        ownerPin: '133111',
+        hilmyPin: '0001',
+        currentPeriod: 'Oktober 2026',
+        lastTaskResetDate: today,
+        targets: { B2C: 20, B2B: 50, KPI_SA: 15, KPI_HILMY: 20 },
+        units: [
+          { unit_id: 'MC-010', model: 'iPhone 13', capacity: '128GB', color: 'Midnight', condition: 'Ex Inter All Op', source: 'Tukar Tambah', cost: 450000, price: 530000, status: 'AVAILABLE', priority: false, date: '21 Okt 2026', holder: 'OPERATOR' },
+          { unit_id: 'MC-001', model: 'iPhone 15 Pro Max', capacity: '256GB', color: 'Natural', condition: 'Like New Fullset', source: 'Supplier JKT', cost: 17200000, price: 18900000, status: 'AVAILABLE', priority: true, date: '21 Okt 2026', holder: 'OWNER' },
+          { unit_id: 'MC-002', model: 'iPhone 15 Pro', capacity: '128GB', color: 'Black', condition: 'Ex iBox Mulus', source: 'Tukar Tambah', cost: 14100000, price: 15500000, status: 'AVAILABLE', priority: true, date: '21 Okt 2026', holder: 'OPERATOR' },
+          { unit_id: 'MC-003', model: 'iPhone 14 Pro Max', capacity: '256GB', color: 'Deep Purple', condition: 'Ex iBox Mulus', source: 'Tukar Tambah', cost: 13200000, price: 14600000, status: 'AVAILABLE', priority: false, date: '20 Okt 2026', holder: 'OPERATOR' },
+          { unit_id: 'MC-004', model: 'iPhone 13', capacity: '128GB', color: 'Midnight', condition: 'Like New Fullset', source: 'Borongan SBY', cost: 7400000, price: 8350000, status: 'AVAILABLE', priority: true, date: '20 Okt 2026', holder: 'OWNER' },
+          { unit_id: 'MC-005', model: 'iPhone 15', capacity: '128GB', color: 'Blue', condition: 'Baru (New Sealed)', source: 'Distributor', cost: 11800000, price: 12900000, status: 'AVAILABLE', priority: false, date: '19 Okt 2026', holder: 'OWNER' },
+          { unit_id: 'MC-006', model: 'iPhone 12', capacity: '64GB', color: 'White', condition: 'Ex Inter All Op', source: 'Tukar Tambah', cost: 4800000, price: 5600000, status: 'AVAILABLE', priority: false, date: '19 Okt 2026', holder: 'OPERATOR' },
+          { unit_id: 'MC-007', model: 'iPhone 14 Pro', capacity: '128GB', color: 'Gold', condition: 'Like New Fullset', source: 'Supplier JKT', cost: 11900000, price: 13100000, status: 'HELD', priority: true, date: '18 Okt 2026', holder: 'OPERATOR' },
+          { unit_id: 'MC-008', model: 'iPhone 15 Pro Max', capacity: '512GB', color: 'Natural', condition: 'Ex iBox Mulus', source: 'Supplier JKT', cost: 19500000, price: 21400000, status: 'SOLD', priority: false, date: '16 Okt 2026', holder: 'OWNER' },
+          { unit_id: 'MC-009', model: 'iPhone 13 Pro', capacity: '256GB', color: 'Silver', condition: 'Ex iBox Mulus', source: 'Borongan SBY', cost: 9800000, price: 10750000, status: 'SOLD', priority: false, date: '18 Okt 2026', holder: 'OPERATOR' }
+        ],
+        sales: [
+          { tx_id: 'INV-1001', date: '16 Okt 2026', channel: 'B2C', buyer: 'Mas Andi (Kediri)', unit_id: 'MC-008', model: 'iPhone 15 Pro Max 512GB', cost: 19500000, price: 21400000, discount: 100000, fee: 50000, pic: 'Hilmy', roleGroup: 'OPERATOR', status: 'COMPLETED', handed: true, incentive: 150000, incentiveApproved: true },
+          { tx_id: 'INV-1002', date: '18 Okt 2026', channel: 'B2B', buyer: 'iStore Malang (Partner B2B)', unit_id: 'MC-009', model: 'iPhone 13 Pro 256GB', cost: 9800000, price: 10750000, discount: 0, fee: 25000, pic: 'Hilmy', roleGroup: 'OPERATOR', status: 'COMPLETED', handed: false, incentive: 100000, incentiveApproved: true }
+        ],
+        leads: [
+          { id: 'LD-1', name: 'Kak Nanda', phone: '6281233445566', source: 'IG Reels', interest: 'iPhone 14 Pro 128GB Gold', stage: 'NEGOTIATION', due: true, note: 'Sudah DP booking unit MC-007' },
+          { id: 'LD-2', name: 'Mas Rizky', phone: '6285799887766', source: 'TikTok Live', interest: 'iPhone 15 Pro Max 256GB', stage: 'QUALIFIED', due: true, note: 'Minta video kondisi fisik & BH' },
+          { id: 'LD-3', name: 'Cellindo Blitar (B2B)', phone: '6281133344455', source: 'Partner B2B', interest: 'Borongan iPhone 13 (5 Unit)', stage: 'CONTACTED', due: true, note: 'Menunggu daftar harga bakul' },
+          { id: 'LD-4', name: 'Mbak Dian', phone: '6281322110099', source: 'Datang ke Toko', interest: 'iPhone 13 128GB Midnight', stage: 'NEW', due: true, note: 'Mau tukar tambah dari iPhone 11' }
+        ],
+        tasks: [
+          { id: 'T-SOP-1', title: 'Cek fisik seluruh stok iPhone pagi & cocokkan aplikasi', deadline: 'Hari ini 10:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-2', title: 'Follow-up semua prospek (Lead) yang aktif hari ini', deadline: 'Hari ini 15:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-3', title: 'Broadcast daftar stok siap jual ke grup bakul & story WA', deadline: 'Hari ini 17:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-SA-1', title: 'Posting katalog stok iPhone siap jual B2C ke Story WA & IG', deadline: 'Hari ini 11:00', from: 'SOP Harian SA', assignee: 'SA', done: false },
+          { id: 'T-SOP-SA-2', title: 'Balas chat calon pembeli B2C & laporkan unit yang terjual', deadline: 'Hari ini 16:00', from: 'SOP Harian SA', assignee: 'SA', done: false }
+        ],
+        attendance: [],
+        logs: [
+          { time: 'Hari ini 08:00', actor: 'SYSTEM', action: 'Sistem MICELL v4.1 Firebase Realtime Sync & KPI aktif.' }
+        ]
+      };
+    }
+
+    window.app = {
+      data: null,
+      page: 'dashboard',
+      stockHolderFilter: 'ALL',
+      isSyncing: false,
+      cloudInitialized: false, // Penjaga agar tidak menimpa Cloud sebelum tarik data pertama selesai
+      sseStream: null,
+      alertTimer: null,
+
+      normalizeDataStructure(obj) {
+        if (!obj) return;
+        obj.ownerPin = '133111';
+        obj.hilmyPin = '0001';
+        if (!obj.targets) obj.targets = { B2C: 20, B2B: 50, KPI_SA: 15, KPI_HILMY: 20 };
+        if (!obj.targets.KPI_SA) obj.targets.KPI_SA = 15;
+        if (!obj.targets.KPI_HILMY) obj.targets.KPI_HILMY = 20;
+        if (!Array.isArray(obj.attendance)) obj.attendance = [];
+        if (!Array.isArray(obj.units)) obj.units = [];
+        if (!Array.isArray(obj.sales)) obj.sales = [];
+        if (!Array.isArray(obj.leads)) obj.leads = [];
+        if (!Array.isArray(obj.tasks)) obj.tasks = [];
+        if (!Array.isArray(obj.logs)) obj.logs = [];
+
+        obj.units.forEach(u => {
+          if (!u.holder) u.holder = 'OWNER';
+          if (u.model && u.capacity) {
+            const capRegex = new RegExp('\\s+' + u.capacity + '$', 'i');
+            u.model = String(u.model).replace(capRegex, '').trim();
+          }
+        });
+        obj.tasks.forEach(t => { if (!t.assignee) t.assignee = 'OPERATOR'; });
+        obj.sales.forEach(s => {
+          if (!s.roleGroup) {
+            s.roleGroup = (s.pic && /\bsa\b/i.test(s.pic)) ? 'SA' : 'OPERATOR';
+          }
+          if (typeof s.incentive === 'undefined') s.incentive = 0;
+          if (typeof s.incentiveApproved === 'undefined') s.incentiveApproved = (s.status === 'COMPLETED');
+        });
+      },
+
+      async init() {
+        const saved = localStorage.getItem(DB_KEY) || localStorage.getItem('MICELL_READY_APP_V4') || localStorage.getItem('MICELL_READY_APP_V3');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            this.data = { ...defaultData(), ...parsed };
+          } catch (e) {
+            this.data = defaultData();
+          }
+        } else {
+          this.data = defaultData();
+        }
+
+        const activeSessionRole = sessionStorage.getItem('MICELL_ACTIVE_ROLE');
+        this.data.role = activeSessionRole || 'SA';
+
+        this.normalizeDataStructure(this.data);
+        this.updateBadges();
+        this.syncRoleUI();
+        this.go('dashboard');
+
+        // 1. WAJIB TARIK DATA FIREBASE TERLEBIH DAHULU SEBELUM MENJALANKAN LOGIKA HARIAN / URL TASK
+        await this.pullCloud(true);
+        this.cloudInitialized = true;
+
+        // 2. Cek apakah ada tambahan tugas dari link WA setelah data Cloud masuk
+        this.checkIncomingTaskFromURL();
+
+        // 3. Aktifkan Real-Time Stream (SSE) dari Firebase agar perubahan muncul kurang dari 1 detik
+        this.startRealtimeListener();
+
+        // 4. Backup Polling ringan setiap 10 detik jika koneksi seluler sempat terputus
+        setInterval(() => {
+          if (!this.isSyncing && !document.hidden) {
+            this.pullCloud(true);
+          }
+        }, 10000);
+      },
+
+      setSyncUI(status, text) {
+        const mDot = document.getElementById('m-sync-dot');
+        const dDot = document.getElementById('d-sync-dot');
+        const dTxt = document.getElementById('d-sync-text');
+        const cls = status === 'online' ? 'bg-emerald-400' : status === 'syncing' ? 'bg-amber-300 sync-pulse' : 'bg-rose-500';
+        if (mDot) mDot.className = 'w-2 h-2 rounded-full inline-block ' + cls;
+        if (dDot) dDot.className = 'w-2 h-2 rounded-full inline-block ' + cls;
+        if (dTxt) dTxt.textContent = text;
+      },
+
+      applyCloudData(cloud) {
+        if (!cloud || typeof cloud !== 'object') return false;
+        const cloudTime = Number(cloud.lastUpdated) || 0;
+        const localTime = Number(this.data.lastUpdated) || 0;
+
+        // Jika data dari Firebase lebih baru (atau saat pertama kali buka), terapkan ke layar
+        if (cloudTime >= localTime || !this.cloudInitialized) {
+          const localRole = this.data.role;
+          this.data = {
+            ...defaultData(),
+            ...cloud,
+            role: localRole,
+            ownerPin: '133111',
+            hilmyPin: '0001'
+          };
+          this.normalizeDataStructure(this.data);
+          localStorage.setItem(DB_KEY, JSON.stringify(this.data));
+          this.updateBadges();
+          this.render();
+          const tStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          this.setSyncUI('online', 'Live Sync (' + tStr + ')');
+          return true;
+        }
+        return false;
+      },
+
+      startRealtimeListener() {
+        if (typeof EventSource === 'undefined') return;
+        try {
+          if (this.sseStream) this.sseStream.close();
+          this.sseStream = new EventSource(FIREBASE_DB_URL);
+          this.sseStream.addEventListener('put', (e) => {
+            try {
+              const packet = JSON.parse(e.data);
+              if (packet && packet.path === '/' && packet.data) {
+                const cloud = packet.data;
+                if (Number(cloud.lastUpdated) > Number(this.data.lastUpdated || 0)) {
+                  this.applyCloudData(cloud);
+                }
+              } else if (packet && packet.path !== '/') {
+                this.pullCloud(true);
+              }
+            } catch (err) {}
+          });
+        } catch (err) {}
+      },
+
+      async pullCloud(silent = true) {
+        this.isSyncing = true;
+        if (!silent) this.setSyncUI('syncing', 'Menarik Firebase...');
+        try {
+          const res = await fetch(FIREBASE_DB_URL + '?t=' + Date.now(), {
+            method: 'GET',
+            cache: 'no-store'
+          });
+          if (!res.ok) throw new Error('Firebase HTTP ' + res.status);
+          const cloud = await res.json();
+
+          if (cloud && typeof cloud === 'object' && (Array.isArray(cloud.units) || cloud.lastUpdated)) {
+            this.applyCloudData(cloud);
+            if (!silent) this.alert('Data terbaru berhasil disinkronkan dari Firebase Cloud!');
+          } else if (cloud === null) {
+            // Database Firebase benar-benar baru dibuat (kosong/null) -> Inisialisasi pertama kali!
+            this.cloudInitialized = true;
+            this.data.lastUpdated = Date.now();
+            await this.pushCloud();
+            if (!silent) this.alert('Database Firebase baru berhasil diinisialisasi dengan data MICELL!');
+          }
+        } catch (e) {
+          this.setSyncUI('error', 'Gangguan Koneksi');
+          if (!silent) {
+            this.alert('Gagal terhubung ke Firebase. Pastikan internet aktif & Rules Firebase disetel ke Test Mode.', true);
+          }
+        } finally {
+          this.isSyncing = false;
+        }
+      },
+
+      async pushCloud() {
+        // Cegah pengiriman data lokal bila aplikasi belum pernah berhasil menarik data dari Firebase
+        if (!this.cloudInitialized) return;
+        this.isSyncing = true;
+        this.setSyncUI('syncing', 'Menyimpan Cloud...');
+        try {
+          const nowTs = Date.now();
+          this.data.lastUpdated = nowTs;
+          const payload = { ...this.data, lastUpdated: nowTs };
+          // Jangan ikutkan role sesi lokal ke database pusat agar tidak mengubah role orang lain
+          delete payload.role;
+
+          localStorage.setItem(DB_KEY, JSON.stringify(this.data));
+
+          const res = await fetch(FIREBASE_DB_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const tStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            this.setSyncUI('online', 'Tersimpan (' + tStr + ')');
+          } else {
+            this.setSyncUI('error', 'Gagal Simpan Cloud');
+          }
+        } catch (e) {
+          this.setSyncUI('error', 'Tersimpan Lokal');
+        } finally {
+          this.isSyncing = false;
+        }
+      },
+
+      resetDailySOPManual() {
+        if (this.data.role === 'SA') return;
+        const today = getTodayLabel();
+        const defaultSOP = [
+          { id: 'T-SOP-1-' + Date.now(), title: 'Cek fisik seluruh stok iPhone pagi & cocokkan aplikasi', deadline: 'Hari ini 10:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-2-' + Date.now(), title: 'Follow-up semua prospek (Lead) yang aktif hari ini', deadline: 'Hari ini 15:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-3-' + Date.now(), title: 'Broadcast daftar stok siap jual ke grup bakul & story WA', deadline: 'Hari ini 17:00', from: 'SOP Harian Owner', assignee: 'OPERATOR', done: false },
+          { id: 'T-SOP-SA-1-' + Date.now(), title: 'Posting katalog stok iPhone siap jual B2C ke Story WA & IG', deadline: 'Hari ini 11:00', from: 'SOP Harian SA', assignee: 'SA', done: false },
+          { id: 'T-SOP-SA-2-' + Date.now(), title: 'Balas chat calon pembeli B2C & laporkan unit yang terjual', deadline: 'Hari ini 16:00', from: 'SOP Harian SA', assignee: 'SA', done: false }
+        ];
+        // Tugas tambahan buatan Owner/Hilmy yang belum selesai TETAP AMAN dan tidak pernah dihapus
+        const customTasks = (this.data.tasks || []).filter(t => !String(t.id).startsWith('T-SOP-'));
+        this.data.tasks = [...customTasks, ...defaultSOP];
+        this.data.lastTaskResetDate = today;
+        this.log('Muat ulang daftar checklist SOP Harian untuk tanggal ' + today);
+        this.alert('SOP Harian berhasil dimuat ulang tanpa menghapus tugas tambahan Anda!');
+        this.render();
+      },
+
+      checkIncomingTaskFromURL() {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const newTaskTitle = params.get('addtask');
+          const deadline = params.get('dl') || 'Hari ini 17:00';
+          const target = params.get('to') || 'OPERATOR';
+          if (newTaskTitle) {
+            const exists = this.data.tasks.some(t => t.title === newTaskTitle && !t.done);
+            if (!exists) {
+              this.data.tasks.unshift({
+                id: 'T-OWN-' + Date.now(),
+                title: newTaskTitle,
+                deadline: deadline,
+                from: 'Perintah Langsung Owner',
+                assignee: target,
+                done: false
+              });
+              this.log('Tugas baru dari Owner diterima otomatis: ' + newTaskTitle);
+              setTimeout(() => {
+                this.go('tasks');
+                this.alert('Tugas Baru dari Owner masuk otomatis: ' + newTaskTitle);
+              }, 300);
+            }
+            if (window.history && window.history.replaceState) {
+              const cleanUrl = window.location.href.split('?')[0];
+              window.history.replaceState({}, document.title, cleanUrl);
+            }
+          }
+        } catch (err) {}
+      },
+
+      save(syncToCloud = true) {
+        this.data.lastUpdated = Date.now();
+        localStorage.setItem(DB_KEY, JSON.stringify(this.data));
+        this.updateBadges();
+        if (syncToCloud) this.pushCloud();
+      },
+
+      log(action) {
+        const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const actorLabel = this.data.role === 'OWNER' ? 'OWNER' : this.data.role === 'OPERATOR' ? 'HILMY' : 'SA MICELL';
+        this.data.logs.unshift({ time: getTodayLabel() + ' ' + now, actor: actorLabel, action: action });
+        if (this.data.logs.length > 200) this.data.logs = this.data.logs.slice(0, 200);
+        this.save(true);
+      },
+
+      hideAlert() {
+        const box = document.getElementById('alert-box');
+        if (box) box.classList.add('hidden');
+        if (this.alertTimer) {
+          clearTimeout(this.alertTimer);
+          this.alertTimer = null;
+        }
+      },
+
+      alert(msg, isError = false) {
+        const box = document.getElementById('alert-box');
+        const txt = document.getElementById('alert-text');
+        if (!box || !txt) return;
+        box.className = 'mx-4 lg:mx-8 mt-4 p-3 rounded border text-xs font-semibold flex items-center justify-between ' +
+          (isError ? 'bg-rose-500/20 border-rose-300 text-rose-700' : 'bg-slate-100 border-slate-300 text-emerald-700');
+        txt.textContent = msg;
+        box.classList.remove('hidden');
+        if (this.alertTimer) clearTimeout(this.alertTimer);
+        this.alertTimer = setTimeout(() => {
+          box.classList.add('hidden');
+        }, 6000);
+      },
+
+      openRoleModal() {
+        document.getElementById('input-pin-hilmy').value = '';
+        document.getElementById('input-pin-owner').value = '';
+        document.getElementById('modal-role').classList.remove('hidden');
+      },
+
+      switchRole(targetRole) {
+        if (targetRole === 'SA') {
+          this.data.role = 'SA';
+          sessionStorage.setItem('MICELL_ACTIVE_ROLE', 'SA');
+          this.closeModal('modal-role');
+          this.syncRoleUI();
+          this.alert('Mode Akun Aktif: SA MICELL (Sales Associate B2C).');
+          this.render();
+          return;
+        }
+        if (targetRole === 'OPERATOR') {
+          const pin = document.getElementById('input-pin-hilmy').value.trim();
+          if (pin !== String(this.data.hilmyPin || '0001')) {
+            this.alert('PIN Leader Hilmy salah! Silakan periksa kembali PIN Anda.', true);
+            return;
+          }
+          this.data.role = 'OPERATOR';
+          sessionStorage.setItem('MICELL_ACTIVE_ROLE', 'OPERATOR');
+          this.closeModal('modal-role');
+          this.syncRoleUI();
+          this.alert('Mode LEADER HILMY Aktif! Seluruh tabel stok, penjualan, dan tugas Hilmy dibuka.');
+          this.render();
+          return;
+        }
+        if (targetRole === 'OWNER') {
+          const pin = document.getElementById('input-pin-owner').value.trim();
+          if (pin !== String(this.data.ownerPin || '133111')) {
+            this.alert('PIN Owner salah! Akses ditolak.', true);
+            return;
+          }
+          this.data.role = 'OWNER';
+          sessionStorage.setItem('MICELL_ACTIVE_ROLE', 'OWNER');
+          this.closeModal('modal-role');
+          this.syncRoleUI();
+          this.alert('Akses OWNER Penuh Aktif! Otoritas konfirmasi insentif, target KPI & pengaturan dibuka.');
+          this.render();
+          return;
+        }
+      },
+
+      syncRoleUI() {
+        const r = this.data.role;
+        const mBadge = document.getElementById('m-role-badge');
+        const dPill = document.getElementById('d-role-pill');
+        const topBtnStock = document.getElementById('top-btn-add-stock');
+        const topBtnSale = document.getElementById('top-btn-add-sale');
+        const mBtnTopSale = document.getElementById('m-btn-top-sale');
+        const dBtnWa = document.getElementById('d-btn-wa-report');
+        const topBtnWa = document.getElementById('top-btn-wa');
+        const dnavSalesLabel = document.getElementById('dnav-sales-label');
+        const dnavTasksLabel = document.getElementById('dnav-tasks-label');
+
+        if (r === 'OWNER') {
+          mBadge.textContent = 'AKSES: OWNER (PENUH)';
+          mBadge.className = 'text-[10px] text-amber-300 mono font-semibold';
+          dPill.textContent = 'OWNER (PENUH)';
+          dPill.className = 'text-[10px] mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold';
+          topBtnStock.classList.remove('hidden');
+          dBtnWa.classList.remove('hidden');
+          topBtnWa.classList.remove('hidden');
+          topBtnSale.textContent = '+ Catat Penjualan';
+          mBtnTopSale.textContent = '+ Jual';
+          dnavSalesLabel.textContent = '3. Penjualan & Insentif';
+          dnavTasksLabel.textContent = '5. Tugas Tim (Hilmy & SA)';
+        } else if (r === 'OPERATOR') {
+          mBadge.textContent = 'MODE: HILMY (LEADER)';
+          mBadge.className = 'text-[10px] text-purple-400 mono font-semibold';
+          dPill.textContent = 'HILMY (LEADER)';
+          dPill.className = 'text-[10px] mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold';
+          topBtnStock.classList.remove('hidden');
+          dBtnWa.classList.remove('hidden');
+          topBtnWa.classList.remove('hidden');
+          topBtnSale.textContent = '+ Catat Penjualan';
+          mBtnTopSale.textContent = '+ Jual';
+          dnavSalesLabel.textContent = '3. Penjualan & Retur';
+          dnavTasksLabel.textContent = '5. Tugas Harian Hilmy';
+        } else {
+          mBadge.textContent = 'AKUN: SA MICELL (B2C)';
+          mBadge.className = 'text-[10px] text-amber-300 mono font-semibold';
+          dPill.textContent = 'SA MICELL';
+          dPill.className = 'text-[10px] mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold';
+          topBtnStock.classList.add('hidden');
+          dBtnWa.classList.add('hidden');
+          topBtnWa.classList.add('hidden');
+          topBtnSale.textContent = '+ Input Penjualan SA';
+          mBtnTopSale.textContent = '+ Input Jual';
+          dnavSalesLabel.textContent = '3. Input Penjualan SA';
+          dnavTasksLabel.textContent = '5. Tugas Harian SA MICELL';
+        }
+        this.updateBadges();
+      },
+
+      updateBadges() {
+        const avail = (this.data.units || []).filter(u => ['AVAILABLE', 'RETURNED_AVAILABLE'].includes(u.status)).length;
+        const due = (this.data.leads || []).filter(l => l.due && !['WON', 'LOST'].includes(l.stage)).length;
+        const relevantTasks = (this.data.tasks || []).filter(t => {
+          if (this.data.role === 'OWNER') return !t.done;
+          if (this.data.role === 'OPERATOR') return !t.done && (t.assignee || 'OPERATOR') === 'OPERATOR';
+          return !t.done && t.assignee === 'SA';
+        }).length;
+        const bStock = document.getElementById('badge-stock');
+        const bLeads = document.getElementById('badge-leads');
+        const bTasks = document.getElementById('badge-tasks');
+        if (bStock) bStock.textContent = avail;
+        if (bLeads) bLeads.textContent = due;
+        if (bTasks) bTasks.textContent = relevantTasks;
+      },
+
+      go(page) {
+        this.hideAlert();
+        this.page = page;
+        ['dashboard', 'stock', 'sales', 'leads', 'tasks', 'settings'].forEach(p => {
+          const dBtn = document.getElementById('dnav-' + p);
+          if (dBtn) {
+            dBtn.className = 'w-full text-left px-3 py-2.5 rounded transition flex justify-between items-center ' +
+              (p === page ? 'bg-white text-zinc-950 font-bold' : 'text-zinc-400 hover:bg-zinc-900 hover:text-white');
+          }
+          const mBtn = document.getElementById('mnav-' + p);
+          if (mBtn) {
+            mBtn.className = 'py-2.5 flex flex-col items-center justify-center text-[10px] font-medium ' +
+              (p === page ? 'text-white bg-zinc-900 border-t-2 border-white' : 'text-zinc-400');
+          }
+        });
+        this.render();
+      },
+
+      // ==================== MODAL ABSENSI MARKI TRACK ====================
+      openCheckinModal() {
+        const defaultName = this.data.role === 'OPERATOR' ? 'Hilmy (Leader)' : this.data.role === 'OWNER' ? 'Owner' : (localStorage.getItem('MICELL_LAST_SA_NAME') || '');
+        document.getElementById('checkin-name').value = defaultName;
+        document.getElementById('checkin-note').value = '';
+        const btn = document.getElementById('btn-submit-checkin');
+        if (btn) {
+          btn.textContent = '📍 Rekam Jam & GPS Sekarang';
+          btn.disabled = false;
+        }
+        document.getElementById('modal-checkin').classList.remove('hidden');
+      },
+
+      submitCheckinForm(e) {
+        e.preventDefault();
+        const staffName = document.getElementById('checkin-name').value.trim();
+        const customNote = document.getElementById('checkin-note').value.trim();
+        if (!staffName) return;
+        if (this.data.role === 'SA') localStorage.setItem('MICELL_LAST_SA_NAME', staffName);
+
+        const btn = document.getElementById('btn-submit-checkin');
+        btn.textContent = 'Merekam Titik GPS...';
+        btn.disabled = true;
+
+        let finished = false;
+        const finishCheckIn = (lat, lng, gpsStatus) => {
+          if (finished) return;
+          finished = true;
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const item = {
+            id: 'ATT-' + Date.now(),
+            name: staffName,
+            role: this.data.role === 'OPERATOR' ? 'LEADER HILMY' : this.data.role === 'OWNER' ? 'OWNER' : 'SA MICELL',
+            date: getTodayLabel(),
+            time: timeStr,
+            lat: lat,
+            lng: lng,
+            note: customNote ? (customNote + ' • ' + gpsStatus) : gpsStatus
+          };
+          if (!Array.isArray(this.data.attendance)) this.data.attendance = [];
+          this.data.attendance.unshift(item);
+          btn.textContent = '📍 Rekam Jam & GPS Sekarang';
+          btn.disabled = false;
+          this.closeModal('modal-checkin');
+          this.log('Check-In Absensi: ' + item.name + ' (' + item.role + ') pukul ' + item.time);
+          this.go('settings');
+          this.alert('Absen Check-In Berhasil! Tercatat atas nama ' + item.name + ' pukul ' + item.time + ' (' + gpsStatus + ').');
+        };
+
+        const safetyTimer = setTimeout(() => {
+          finishCheckIn(null, null, 'Timeout GPS / Nonaktif');
+        }, 5500);
+
+        if ('geolocation' in navigator) {
+          try {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                clearTimeout(safetyTimer);
+                finishCheckIn(pos.coords.latitude, pos.coords.longitude, 'GPS Akurat');
+              },
+              (err) => {
+                clearTimeout(safetyTimer);
+                const reason = window.location.protocol === 'file:'
+                  ? 'Izin GPS Dibatasi pada File Lokal'
+                  : (err && err.code === 1 ? 'Izin GPS Ditolak' : 'GPS Nonaktif');
+                finishCheckIn(null, null, reason);
+              },
+              { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+            );
+          } catch (err) {
+            clearTimeout(safetyTimer);
+            finishCheckIn(null, null, 'GPS Tidak Tersedia');
+          }
+        } else {
+          clearTimeout(safetyTimer);
+          finishCheckIn(null, null, 'Perangkat Tanpa GPS');
+        }
+      },
+
+      deleteAttendance(id) {
+        if (this.data.role !== 'OWNER') return;
+        this.data.attendance = (this.data.attendance || []).filter(a => a.id !== id);
+        this.log('Hapus baris log absensi: ' + id);
+        this.alert('Data absensi berhasil dihapus.');
+        this.render();
+      },
+
+      // ==================== MODAL STOK ====================
+      openStockModal(editUnitId = null) {
+        if (this.data.role === 'SA') {
+          this.alert('DITOLAK: Akun SA MICELL hanya diizinkan melihat status stok!', true);
+          return;
+        }
+        const form = document.getElementById('form-stock');
+        form.reset();
+        const holderSelect = document.getElementById('stk-holder');
+        const lockNote = document.getElementById('stk-holder-lock-note');
+
+        if (editUnitId) {
+          const u = this.data.units.find(x => x.unit_id === editUnitId);
+          if (!u) return;
+          document.getElementById('modal-stock-title').textContent = 'Edit Data Unit ' + u.unit_id;
+          document.getElementById('modal-stock-sub').textContent = 'Diinput/Dipegang oleh: ' + (u.holder === 'OPERATOR' ? 'HILMY (Tabel Ungu)' : 'OWNER (Tabel Putih)');
+          document.getElementById('stk-edit-mode').value = 'true';
+          document.getElementById('stk-unitid').value = u.unit_id;
+          document.getElementById('stk-unitid').readOnly = true;
+          document.getElementById('stk-capacity').value = u.capacity;
+          document.getElementById('stk-model').value = u.model;
+          document.getElementById('stk-color').value = u.color;
+          document.getElementById('stk-condition').value = u.condition;
+          document.getElementById('stk-source').value = u.source;
+          document.getElementById('stk-cost').value = u.cost;
+          document.getElementById('stk-price').value = u.price;
+          document.getElementById('stk-status').value = u.status;
+          holderSelect.value = u.holder || 'OWNER';
+          holderSelect.disabled = this.data.role !== 'OWNER';
+          lockNote.classList.toggle('hidden', this.data.role === 'OWNER');
+          document.getElementById('stk-priority').checked = !!u.priority;
+        } else {
+          const maxUnitNum = this.data.units.reduce((max, u) => {
+            const m = String(u.unit_id).match(/^MC-(\d+)$/i);
+            return m ? Math.max(max, Number(m[1])) : max;
+          }, 0);
+          const nextNum = String(maxUnitNum + 1).padStart(3, '0');
+          document.getElementById('modal-stock-title').textContent = 'Tambah Unit iPhone Baru';
+          document.getElementById('modal-stock-sub').textContent = 'Mode aktif saat ini: ' + (this.data.role === 'OPERATOR' ? 'Hilmy (Otomatis Tabel Ungu)' : 'Owner (Otomatis Tabel Putih)');
+          document.getElementById('stk-edit-mode').value = 'false';
+          document.getElementById('stk-unitid').value = 'MC-' + nextNum;
+          document.getElementById('stk-unitid').readOnly = false;
+          document.getElementById('stk-status').value = 'AVAILABLE';
+          holderSelect.value = this.data.role === 'OPERATOR' ? 'OPERATOR' : 'OWNER';
+          holderSelect.disabled = this.data.role !== 'OWNER';
+          lockNote.classList.add('hidden');
+        }
+        document.getElementById('modal-stock').classList.remove('hidden');
+      },
+
+      saveStockForm(e) {
+        e.preventDefault();
+        if (this.data.role === 'SA') return;
+        const fd = new FormData(e.target);
+        const isEdit = fd.get('edit_mode') === 'true';
+        const unit_id = String(document.getElementById('stk-unitid').value || '').trim().toUpperCase();
+        const capacity = document.getElementById('stk-capacity').value;
+        const rawModel = String(document.getElementById('stk-model').value || '').trim();
+        const cleanModel = rawModel.replace(new RegExp('\\s+' + capacity + '$', 'i'), '').trim();
+        const holderVal = document.getElementById('stk-holder').value || (this.data.role === 'OPERATOR' ? 'OPERATOR' : 'OWNER');
+
+        if (isEdit) {
+          const u = this.data.units.find(x => x.unit_id === unit_id);
+          if (!u) return;
+          u.model = cleanModel;
+          u.capacity = capacity;
+          u.color = String(fd.get('color') || '').trim();
+          u.condition = fd.get('condition');
+          u.source = String(fd.get('source') || '').trim();
+          u.cost = Number(fd.get('cost')) || 0;
+          u.price = Number(fd.get('price')) || 0;
+          u.status = fd.get('status');
+          if (this.data.role === 'OWNER') {
+            u.holder = holderVal;
+          }
+          u.priority = document.getElementById('stk-priority').checked;
+          this.log('Edit unit ' + unit_id + ' (' + formatUnitLabel(u) + ') - Status: ' + u.status);
+          this.closeModal('modal-stock');
+          this.alert('Data unit ' + unit_id + ' berhasil diperbarui & disinkronkan ke Firebase.');
+          this.render();
+        } else {
+          if (this.data.units.some(u => u.unit_id === unit_id)) {
+            this.alert('Kode Unit ' + unit_id + ' sudah terpakai!', true);
+            return;
+          }
+          const holder = this.data.role === 'OPERATOR' ? 'OPERATOR' : holderVal;
+          const newU = {
+            unit_id: unit_id,
+            model: cleanModel,
+            capacity: capacity,
+            color: String(fd.get('color') || '').trim(),
+            condition: fd.get('condition'),
+            source: String(fd.get('source') || '').trim(),
+            cost: Number(fd.get('cost')) || 0,
+            price: Number(fd.get('price')) || 0,
+            status: fd.get('status') || 'AVAILABLE',
+            priority: document.getElementById('stk-priority').checked,
+            date: getTodayLabel(),
+            holder: holder
+          };
+          this.data.units.unshift(newU);
+          this.log('Tambah stok baru (' + (holder === 'OPERATOR' ? 'Stok Hilmy - Ungu' : 'Stok Owner - Putih') + '): ' + unit_id);
+          this.closeModal('modal-stock');
+          this.alert('Unit ' + unit_id + ' berhasil ditambahkan & tersimpan di Firebase.');
+          this.render();
+        }
+      },
+
+      changeStockStatusManual(unit_id, newStatus) {
+        if (this.data.role === 'SA') {
+          this.alert('DITOLAK: Akun SA MICELL hanya dapat melihat status stok!', true);
+          this.render();
+          return;
+        }
+        const u = this.data.units.find(x => x.unit_id === unit_id);
+        if (!u) return;
+        if (u.status === 'RETURN_PENDING' && this.data.role !== 'OWNER') {
+          this.alert('KHUSUS OWNER: Unit retur sedang menunggu cek fisik QC dari Owner!', true);
+          this.render();
+          return;
+        }
+        u.status = newStatus;
+        this.log('Ubah status manual unit ' + unit_id + ' -> ' + newStatus);
+        this.alert('Status unit ' + unit_id + ' diubah menjadi ' + newStatus + '.');
+        this.render();
+      },
+
+      deleteStockRow(unit_id) {
+        if (this.data.role === 'SA') return;
+        const u = this.data.units.find(x => x.unit_id === unit_id);
+        if (!u) return;
+        this.data.units = this.data.units.filter(x => x.unit_id !== unit_id);
+        this.log('Hapus baris stok: ' + unit_id + ' (' + formatUnitLabel(u) + ')');
+        this.alert('Baris stok ' + unit_id + ' telah dihapus dari tabel & Firebase.');
+        this.render();
+      },
+
+      // ==================== MODAL PENJUALAN & KONFIRMASI INSENTIF ====================
+      openSaleModal(editTxId = null) {
+        const form = document.getElementById('form-sale');
+        form.reset();
+        const picker = document.getElementById('sale-unit-picker');
+        const isSA = this.data.role === 'SA';
+        const isOwner = this.data.role === 'OWNER';
+
+        document.getElementById('sale-price-row').classList.toggle('hidden', isSA);
+        document.getElementById('sale-extra-costs').classList.toggle('hidden', isSA);
+        document.getElementById('sale-status-wrap').classList.toggle('hidden', isSA);
+        document.getElementById('sale-owner-incentive-wrap').classList.toggle('hidden', !isOwner);
+
+        if (editTxId) {
+          if (isSA) return;
+          const s = this.data.sales.find(x => x.tx_id === editTxId);
+          if (!s) return;
+          document.getElementById('modal-sale-title').textContent = 'Edit / Konfirmasi Transaksi ' + s.tx_id;
+          document.getElementById('modal-sale-sub').textContent = 'Diinput oleh PIC: ' + (s.pic || '-') + ' (' + (s.roleGroup || 'OPERATOR') + ')';
+          document.getElementById('sale-edit-txid').value = s.tx_id;
+          picker.innerHTML = '<option value="' + s.unit_id + '">' + s.unit_id + ' — ' + s.model + '</option>';
+          picker.disabled = true;
+          document.getElementById('sale-channel').value = s.channel || 'B2C';
+          document.getElementById('sale-price-field').value = s.price || 0;
+          document.getElementById('sale-buyer').value = s.buyer || '';
+          document.getElementById('sale-pic').value = s.pic || 'Hilmy';
+          document.getElementById('sale-discount').value = s.discount || 0;
+          document.getElementById('sale-fee').value = s.fee || 0;
+          document.getElementById('sale-status').value = s.status;
+          document.getElementById('sale-handed').checked = !!s.handed;
+          document.getElementById('sale-incentive').value = s.incentive || 0;
+          document.getElementById('sale-inc-approved').checked = !!s.incentiveApproved;
+        } else {
+          const avail = this.data.units.filter(u => ['AVAILABLE', 'RETURNED_AVAILABLE', 'HELD'].includes(u.status));
+          if (avail.length === 0) {
+            this.alert('Tidak ada unit yang tersedia untuk dijual!', true);
+            return;
+          }
+          document.getElementById('modal-sale-title').textContent = isSA ? 'Input Laporan Penjualan SA (B2C)' : 'Catat Penjualan Unit';
+          document.getElementById('modal-sale-sub').textContent = isSA
+            ? 'Laporan penjualan B2C Anda akan dikonfirmasi & diinput insentifnya oleh Owner.'
+            : 'Bisa diedit manual status & angkanya oleh Owner maupun Hilmy.';
+          document.getElementById('sale-edit-txid').value = '';
+          picker.disabled = false;
+
+          picker.innerHTML = avail.map(u => {
+            const holderTag = u.holder === 'OPERATOR' ? 'HILMY' : 'OWNER';
+            const priceText = isSA ? '' : (' (Rp ' + u.price.toLocaleString('id-ID') + ')');
+            return '<option value="' + u.unit_id + '">' + u.unit_id + ' [' + holderTag + '] — ' + formatUnitLabel(u) + priceText + '</option>';
+          }).join('');
+
+          this.updateSaleDefaultPrice(avail[0].unit_id);
+          document.getElementById('sale-pic').value = isSA ? (localStorage.getItem('MICELL_LAST_SA_NAME') || 'SA MICELL') : (isOwner ? 'Owner' : 'Hilmy');
+          document.getElementById('sale-status').value = isSA ? 'PENDING_PAYMENT' : 'COMPLETED';
+          document.getElementById('sale-handed').checked = true;
+          document.getElementById('sale-incentive').value = 100000;
+          document.getElementById('sale-inc-approved').checked = isOwner;
+        }
+        document.getElementById('modal-sale').classList.remove('hidden');
+      },
+
+      updateSaleDefaultPrice(unit_id) {
+        const u = this.data.units.find(x => x.unit_id === unit_id);
+        if (u) document.getElementById('sale-price-field').value = u.price;
+      },
+
+      syncUnitWithSaleStatus(unit, saleStatus) {
+        if (!unit) return;
+        if (saleStatus === 'CANCELLED') unit.status = 'AVAILABLE';
+        else if (saleStatus === 'PENDING_PAYMENT') unit.status = 'HELD';
+        else if (saleStatus === 'RETURN_REQUESTED') unit.status = 'RETURN_PENDING';
+        else if (saleStatus === 'RETURNED') unit.status = 'RETURNED_AVAILABLE';
+        else if (saleStatus === 'COMPLETED') unit.status = 'SOLD';
+      },
+
+      saveSaleForm(e) {
+        e.preventDefault();
+        const editTxId = document.getElementById('sale-edit-txid').value;
+        const isSA = this.data.role === 'SA';
+        const isOwner = this.data.role === 'OWNER';
+
+        if (editTxId) {
+          const s = this.data.sales.find(x => x.tx_id === editTxId);
+          if (!s) return;
+          const newStatus = document.getElementById('sale-status').value;
+          if (newStatus === 'RETURNED' && !isOwner) {
+            this.alert('KHUSUS OWNER: Penyelesaian status RETURNED (Setujui QC) membutuhkan Mode Owner!', true);
+            return;
+          }
+          s.channel = document.getElementById('sale-channel').value || 'B2C';
+          s.price = Number(document.getElementById('sale-price-field').value || s.price);
+          s.buyer = String(document.getElementById('sale-buyer').value || '').trim();
+          s.pic = String(document.getElementById('sale-pic').value || '').trim();
+          s.discount = Number(document.getElementById('sale-discount').value || 0);
+          s.fee = Number(document.getElementById('sale-fee').value || 0);
+          s.status = newStatus;
+          s.handed = document.getElementById('sale-handed').checked;
+
+          if (isOwner) {
+            s.incentive = Number(document.getElementById('sale-incentive').value || 0);
+            s.incentiveApproved = document.getElementById('sale-inc-approved').checked;
+          }
+          if (['CANCELLED', 'RETURNED'].includes(newStatus)) {
+            s.incentiveApproved = false;
+          }
+
+          const u = this.data.units.find(x => x.unit_id === s.unit_id);
+          this.syncUnitWithSaleStatus(u, newStatus);
+
+          this.log('Edit transaksi ' + s.tx_id + ' (' + s.buyer + ') -> Status: ' + s.status);
+          this.closeModal('modal-sale');
+          this.alert('Transaksi ' + s.tx_id + ' berhasil diperbarui.');
+          this.render();
+        } else {
+          const unit_id = document.getElementById('sale-unit-picker').value;
+          const unit = this.data.units.find(u => u.unit_id === unit_id);
+          if (!unit) return;
+
+          const picName = String(document.getElementById('sale-pic').value || (isSA ? 'SA MICELL' : 'Hilmy')).trim();
+          if (isSA) localStorage.setItem('MICELL_LAST_SA_NAME', picName);
+
+          const status = isSA ? 'PENDING_PAYMENT' : (document.getElementById('sale-status').value || 'COMPLETED');
+          this.syncUnitWithSaleStatus(unit, status);
+
+          const maxTxNum = this.data.sales.reduce((max, s) => {
+            const m = String(s.tx_id).match(/^INV-(\d+)$/i);
+            return m ? Math.max(max, Number(m[1])) : max;
+          }, 1000);
+          const tx_id = 'INV-' + (maxTxNum + 1);
+          const detectedRoleGroup = isSA ? 'SA' : (/\bsa\b/i.test(picName) ? 'SA' : 'OPERATOR');
+          const sale = {
+            tx_id: tx_id,
+            date: getTodayLabel(),
+            channel: isSA ? 'B2C' : (document.getElementById('sale-channel').value || 'B2C'),
+            buyer: String(document.getElementById('sale-buyer').value || '').trim(),
+            unit_id: unit_id,
+            model: formatUnitLabel(unit),
+            cost: unit.cost,
+            price: isSA ? unit.price : Number(document.getElementById('sale-price-field').value || unit.price),
+            discount: isSA ? 0 : Number(document.getElementById('sale-discount').value || 0),
+            fee: isSA ? 0 : Number(document.getElementById('sale-fee').value || 0),
+            pic: picName,
+            roleGroup: detectedRoleGroup,
+            status: status,
+            handed: document.getElementById('sale-handed').checked,
+            incentive: isOwner ? Number(document.getElementById('sale-incentive').value || 0) : 0,
+            incentiveApproved: isOwner ? (document.getElementById('sale-inc-approved').checked && status === 'COMPLETED') : false
+          };
+
+          this.data.sales.unshift(sale);
+          this.log('Input penjualan ' + sale.channel + ' ' + tx_id + ': Unit ' + unit_id + ' oleh ' + sale.pic);
+          this.closeModal('modal-sale');
+          this.alert(isSA
+            ? ('Laporan penjualan ' + tx_id + ' terkirim! Menunggu konfirmasi & input insentif dari Owner.')
+            : ('Transaksi ' + tx_id + ' berhasil disimpan!'));
+          this.render();
+        }
+      },
+
+      openIncentiveModal(tx_id) {
+        if (this.data.role !== 'OWNER') {
+          this.alert('KHUSUS OWNER: Masuk ke Mode Owner untuk mengonfirmasi insentif!', true);
+          return;
+        }
+        const s = this.data.sales.find(x => x.tx_id === tx_id);
+        if (!s) return;
+        document.getElementById('inc-tx-id').value = s.tx_id;
+        document.getElementById('inc-modal-title').textContent = 'Konfirmasi & Insentif ' + s.tx_id;
+        document.getElementById('inc-modal-sub').textContent = s.unit_id + ' (' + s.model + ') • Sales: ' + s.pic;
+        document.getElementById('inc-deal-price').value = s.price || 0;
+        document.getElementById('inc-amount').value = s.incentive || 100000;
+        document.getElementById('modal-incentive').classList.remove('hidden');
+      },
+
+      submitIncentiveForm(e) {
+        e.preventDefault();
+        if (this.data.role !== 'OWNER') return;
+        const tx_id = document.getElementById('inc-tx-id').value;
+        const s = this.data.sales.find(x => x.tx_id === tx_id);
+        if (!s) return;
+        s.price = Number(document.getElementById('inc-deal-price').value) || s.price;
+        s.incentive = Number(document.getElementById('inc-amount').value) || 0;
+        s.incentiveApproved = true;
+        s.status = 'COMPLETED';
+
+        const u = this.data.units.find(x => x.unit_id === s.unit_id);
+        if (u) u.status = 'SOLD';
+
+        this.closeModal('modal-incentive');
+        this.log('Owner konfirmasi penjualan ' + s.tx_id + ' (' + s.pic + ') + Insentif Rp ' + s.incentive.toLocaleString('id-ID'));
+        this.alert('Penjualan ' + s.tx_id + ' disetujui! Insentif Rp ' + s.incentive.toLocaleString('id-ID') + ' masuk ke KPI ' + s.pic);
+        this.render();
+      },
+
+      changeSaleStatusManual(tx_id, newStatus) {
+        if (this.data.role === 'SA') return;
+        const s = this.data.sales.find(x => x.tx_id === tx_id);
+        if (!s) return;
+        if (newStatus === 'RETURNED' && this.data.role !== 'OWNER') {
+          this.alert('DITOLAK: Persetujuan akhir retur (RETURNED) wajib dilakukan oleh OWNER!', true);
+          this.render();
+          return;
+        }
+        s.status = newStatus;
+        if (['CANCELLED', 'RETURNED'].includes(newStatus)) {
+          s.incentiveApproved = false;
+        }
+        const u = this.data.units.find(x => x.unit_id === s.unit_id);
+        this.syncUnitWithSaleStatus(u, newStatus);
+        this.log('Ubah status transaksi ' + tx_id + ' -> ' + newStatus);
+        this.alert('Status transaksi ' + tx_id + ' diubah ke ' + newStatus + '.');
+        this.render();
+      },
+
+      deleteSaleRow(tx_id) {
+        if (this.data.role === 'SA') return;
+        const s = this.data.sales.find(x => x.tx_id === tx_id);
+        if (!s) return;
+        const u = this.data.units.find(x => x.unit_id === s.unit_id);
+        if (u && ['SOLD', 'HELD', 'RETURN_PENDING'].includes(u.status)) {
+          u.status = 'AVAILABLE';
+        }
+        this.data.sales = this.data.sales.filter(x => x.tx_id !== tx_id);
+        this.log('Hapus baris transaksi: ' + tx_id + ' (Unit ' + s.unit_id + ' kembali AVAILABLE)');
+        this.alert('Baris transaksi ' + tx_id + ' dihapus & status unit ' + s.unit_id + ' dikembalikan ke AVAILABLE.');
+        this.render();
+      },
+
+      closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      },
+
+      sendWhatsAppReport() {
+        const avail = this.data.units.filter(u => ['AVAILABLE', 'RETURNED_AVAILABLE'].includes(u.status));
+        const hilmyStock = avail.filter(u => u.holder === 'OPERATOR').length;
+        const ownerStock = avail.filter(u => u.holder !== 'OPERATOR').length;
+        const b2c = this.data.sales.filter(s => s.channel === 'B2C' && s.status === 'COMPLETED').length;
+        const b2b = this.data.sales.filter(s => s.channel === 'B2B' && s.status === 'COMPLETED').length;
+        const text = '*LAPORAN HARIAN MICELL (' + this.data.currentPeriod + ')*%0A' +
+          '• Total Stok Siap: *' + avail.length + ' unit* (Hilmy: ' + hilmyStock + ' | Owner: ' + ownerStock + ')%0A' +
+          '• Sellout B2C: *' + b2c + '/' + this.data.targets.B2C + ' unit*%0A' +
+          '• Sellout B2B: *' + b2b + '/' + this.data.targets.B2B + ' unit*%0A' +
+          '• Tugas Belum Selesai: *' + this.data.tasks.filter(t => !t.done).length + ' tugas*';
+        window.open('https://wa.me/?text=' + text, '_blank');
+      },
+
+      buildKPISectionHTML() {
+        const isSA = this.data.role === 'SA';
+        const isOwner = this.data.role === 'OWNER';
+
+        const saApproved = this.data.sales.filter(s => s.roleGroup === 'SA' && s.status === 'COMPLETED' && s.incentiveApproved);
+        const saPending = this.data.sales.filter(s => s.roleGroup === 'SA' && !['CANCELLED', 'RETURNED'].includes(s.status) && (!s.incentiveApproved || s.status === 'PENDING_PAYMENT'));
+        const saUnits = saApproved.length;
+        const saTarget = this.data.targets.KPI_SA || 15;
+        const saPct = Math.min(100, Math.round((saUnits / Math.max(1, saTarget)) * 100));
+        const saIncentive = saApproved.reduce((sum, s) => sum + (Number(s.incentive) || 0), 0);
+
+        const hilmyApproved = this.data.sales.filter(s => s.roleGroup !== 'SA' && s.status === 'COMPLETED' && s.incentiveApproved);
+        const hilmyUnits = hilmyApproved.length;
+        const hilmyTarget = this.data.targets.KPI_HILMY || 20;
+        const hilmyPct = Math.min(100, Math.round((hilmyUnits / Math.max(1, hilmyTarget)) * 100));
+        const hilmyIncentive = hilmyApproved.reduce((sum, s) => sum + (Number(s.incentive) || 0), 0);
+
+        return `
+          <div class="card p-4 space-y-3">
+            <div class="flex flex-wrap justify-between items-center border-b pb-2.5 gap-2">
+              <div>
+                <span class="text-xs font-bold uppercase">KPI Penggajian Berbasis Insentif Penjualan (0% — 100%)</span>
+                <p class="text-[11px] text-slate-500">Angka penjualan & komisi insentif terhitung otomatis setelah dikonfirmasi Owner.</p>
+              </div>
+              ${isOwner ? `<button type="button" onclick="app.openTargetModal()" class="px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded">⚙️ Ubah Target KPI</button>` : ''}
+            </div>
+
+            <div class="grid grid-cols-1 ${isSA ? '' : 'lg:grid-cols-2'} gap-4">
+              <div class="p-3.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center gap-4">
+                <div class="w-24 h-24">
+                  <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke="#059669" stroke-dasharray="${saPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <text x="18" y="20.35" class="percentage">${saPct}%</text>
+                  </svg>
+                </div>
+                <div class="flex-1 text-xs space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold uppercase text-emerald-700">KPI SALES: SA MICELL</span>
+                    <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-200 font-bold">Antrean Konfirmasi: ${saPending.length}</span>
+                  </div>
+                  <div class="text-slate-600">Penjualan Sah: <b class="mono text-sm">${saUnits} / ${saTarget} Unit</b></div>
+                  <div class="pt-1 border-t border-slate-200">
+                    <div class="text-[11px] text-slate-500">Total Insentif Terkumpul:</div>
+                    <div class="text-base lg:text-lg font-bold mono text-emerald-700">Rp ${saIncentive.toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+              </div>
+
+              ${!isSA ? `
+              <div class="p-3.5 rounded-lg border border-slate-200 bg-purple-100/40 flex items-center gap-4">
+                <div class="w-24 h-24">
+                  <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle" stroke="#7E22CE" stroke-dasharray="${hilmyPct}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <text x="18" y="20.35" class="percentage">${hilmyPct}%</text>
+                  </svg>
+                </div>
+                <div class="flex-1 text-xs space-y-1">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold uppercase text-purple-800">KPI LEADER: HILMY</span>
+                    <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">Target: ${hilmyTarget} Unit</span>
+                  </div>
+                  <div class="text-slate-600">Penjualan Sah: <b class="mono text-sm">${hilmyUnits} / ${hilmyTarget} Unit</b></div>
+                  <div class="pt-1 border-t border-slate-200">
+                    <div class="text-[11px] text-slate-500">Total Insentif Terkumpul:</div>
+                    <div class="text-base lg:text-lg font-bold mono text-purple-800">Rp ${hilmyIncentive.toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      },
+
+      render() {
+        const box = document.getElementById('main-content');
+        const isSA = this.data.role === 'SA';
+        const isOwner = this.data.role === 'OWNER';
+
+        const availUnits = (this.data.units || []).filter(u => ['AVAILABLE', 'RETURNED_AVAILABLE'].includes(u.status));
+        const hilmyAvail = availUnits.filter(u => u.holder === 'OPERATOR').length;
+        const ownerAvail = availUnits.filter(u => u.holder !== 'OPERATOR').length;
+        const b2cSales = (this.data.sales || []).filter(s => s.channel === 'B2C' && s.status === 'COMPLETED');
+        const b2bSales = (this.data.sales || []).filter(s => s.channel === 'B2B' && s.status === 'COMPLETED');
+        const totalProfit = [...b2cSales, ...b2bSales].reduce((sum, s) => sum + (s.price - s.cost - s.discount - s.fee), 0);
+
+        const visibleTasks = (this.data.tasks || []).filter(t => {
+          const target = t.assignee || 'OPERATOR';
+          if (isOwner) return true;
+          if (this.data.role === 'OPERATOR') return target === 'OPERATOR';
+          return target === 'SA';
+        });
+
+        if (this.page === 'dashboard') {
+          const pctB2C = Math.round((b2cSales.length / Math.max(1, this.data.targets.B2C || 1)) * 100);
+          const pctB2B = Math.round((b2bSales.length / Math.max(1, this.data.targets.B2B || 1)) * 100);
+
+          box.innerHTML = `
+            ${this.buildKPISectionHTML()}
+
+            ${!isSA ? `
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="card p-4">
+                <div class="text-[11px] mono text-slate-500 uppercase">Stok Siap Jual</div>
+                <div class="text-2xl lg:text-3xl font-bold mono mt-1">${availUnits.length} <span class="text-xs font-normal">unit</span></div>
+                <div class="flex items-center gap-2 text-[11px] mt-1 font-semibold">
+                  <span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">Hilmy: ${hilmyAvail}</span>
+                  <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">Owner: ${ownerAvail}</span>
+                </div>
+              </div>
+              <div class="card p-4">
+                <div class="flex justify-between text-[11px] mono text-slate-500"><span>SELLOUT B2C</span><b>${pctB2C}%</b></div>
+                <div class="text-2xl lg:text-3xl font-bold mono mt-1">${b2cSales.length}<span class="text-sm text-slate-400">/${this.data.targets.B2C}</span></div>
+                <div class="w-full bg-slate-100 h-1.5 rounded mt-2"><div class="bg-zinc-950 h-full rounded" style="width:${Math.min(100, pctB2C)}%"></div></div>
+              </div>
+              <div class="card p-4">
+                <div class="flex justify-between text-[11px] mono text-slate-500"><span>SELLOUT B2B</span><b>${pctB2B}%</b></div>
+                <div class="text-2xl lg:text-3xl font-bold mono mt-1">${b2bSales.length}<span class="text-sm text-slate-400">/${this.data.targets.B2B}</span></div>
+                <div class="w-full bg-slate-100 h-1.5 rounded mt-2"><div class="bg-zinc-950 h-full rounded" style="width:${Math.min(100, pctB2B)}%"></div></div>
+              </div>
+              <div class="card p-4">
+                <div class="text-[11px] mono text-slate-500 uppercase">Laba Kotor (${this.data.currentPeriod})</div>
+                <div class="text-lg lg:text-xl font-bold mono mt-1 text-emerald-700">Rp ${totalProfit.toLocaleString('id-ID')}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Dari ${b2cSales.length + b2bSales.length} unit terjual</div>
+              </div>
+            </div>
+            ` : ''}
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="card overflow-hidden">
+                <div class="px-4 py-3 border-b flex justify-between items-center">
+                  <span class="text-xs font-bold uppercase">Stok Siap Jual (Putih: Owner | Ungu: Hilmy)</span>
+                  <button type="button" onclick="app.go('stock')" class="text-xs underline font-semibold">Lihat Stok</button>
+                </div>
+                <div class="divide-y text-xs">
+                  ${availUnits.slice(0, 6).map(u => `
+                    <div class="p-3 flex justify-between items-center ${u.holder === 'OPERATOR' ? 'row-hilmy' : 'row-owner'}">
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="mono font-bold">${u.unit_id}</span>
+                          <span class="text-[10px] mono font-bold px-1.5 py-0.5 rounded ${u.holder === 'OPERATOR' ? 'bg-purple-700 text-white' : 'bg-slate-200 text-slate-800'}">
+                            ${u.holder === 'OPERATOR' ? 'STOK HILMY' : 'STOK OWNER'}
+                          </span>
+                        </div>
+                        <div class="font-bold mt-0.5">${formatUnitLabel(u)}</div>
+                        ${!isSA ? `<div class="text-[11px] text-slate-600">${u.condition} • ${u.color}</div>` : ''}
+                      </div>
+                      <div class="text-right mono font-bold">
+                        ${isSA
+                          ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[10px]">${u.status}</span>`
+                          : `Rp ${u.price.toLocaleString('id-ID')}`}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="card p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <span class="text-xs font-bold uppercase text-rose-700">
+                      ${isSA ? 'Tugas Harian SA MICELL' : isOwner ? 'Tugas Harian Tim (Hilmy & SA)' : 'Tugas Harian Hilmy'}
+                    </span>
+                    <p class="text-[11px] text-slate-500">Tersimpan permanen di Firebase Cloud.</p>
+                  </div>
+                  <button type="button" onclick="app.go('tasks')" class="text-xs underline font-semibold">Kelola Tugas</button>
+                </div>
+                ${visibleTasks.map(t => `
+                  <label class="flex items-center justify-between p-2.5 border rounded text-xs cursor-pointer ${t.done ? 'bg-slate-50 text-slate-400 line-through' : 'bg-white'}">
+                    <div class="flex items-center space-x-2.5">
+                      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="app.toggleTask('${t.id}')" class="rounded" />
+                      <div>
+                        <div class="font-semibold">${t.title}</div>
+                        <div class="text-[10px] text-purple-700 font-medium">[${(t.assignee || 'OPERATOR') === 'SA' ? 'SA MICELL' : 'HILMY'}] • ${t.from || 'Owner'}</div>
+                      </div>
+                    </div>
+                    <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100">${t.deadline}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        else if (this.page === 'stock') {
+          const filtered = (this.data.units || []).filter(u => {
+            if (this.stockHolderFilter === 'HILMY') return u.holder === 'OPERATOR';
+            if (this.stockHolderFilter === 'OWNER') return u.holder !== 'OPERATOR';
+            return true;
+          });
+
+          if (isSA) {
+            box.innerHTML = `
+              <div class="card overflow-hidden">
+                <div class="px-4 py-3 border-b flex flex-wrap justify-between items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold uppercase">Daftar Stok Unit (${filtered.length} Unit)</span>
+                    <div class="flex items-center gap-1 text-[11px]">
+                      <button type="button" onclick="app.stockHolderFilter='ALL';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'ALL' ? 'bg-zinc-900 text-white' : 'bg-slate-100 text-slate-700'}">Semua</button>
+                      <button type="button" onclick="app.stockHolderFilter='HILMY';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'HILMY' ? 'bg-purple-700 text-white' : 'bg-purple-100 text-purple-800'}">Ungu: Dibawa Hilmy</button>
+                      <button type="button" onclick="app.stockHolderFilter='OWNER';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'OWNER' ? 'bg-zinc-900 text-white' : 'bg-slate-200 text-slate-800'}">Putih: Stok Owner</button>
+                    </div>
+                  </div>
+                  <span class="text-[11px] text-slate-500 mono">Akses Lihat Status (SA MICELL)</span>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr class="bg-slate-100 border-b text-[10px] mono uppercase text-slate-600">
+                        <th class="p-3">Kode Pembawa</th>
+                        <th class="p-3">Model Unit</th>
+                        <th class="p-3">Status Stok</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                      ${filtered.map(u => `
+                        <tr class="${u.holder === 'OPERATOR' ? 'row-hilmy' : 'row-owner'}">
+                          <td class="p-3">
+                            <div class="mono font-bold">${u.unit_id}</div>
+                            <span class="inline-block mt-1 text-[10px] mono font-bold px-1.5 py-0.5 rounded ${u.holder === 'OPERATOR' ? 'bg-purple-700 text-white' : 'bg-slate-200 text-slate-800'}">
+                              ${u.holder === 'OPERATOR' ? 'DIBAWA HILMY' : 'STOK OWNER'}
+                            </span>
+                          </td>
+                          <td class="p-3 font-bold">${formatUnitLabel(u)} (${u.color})</td>
+                          <td class="p-3"><span class="mono text-[11px] font-bold px-2 py-1 rounded bg-white border border-slate-300">${u.status}</span></td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          box.innerHTML = `
+            <div class="card overflow-hidden">
+              <div class="px-4 py-3 border-b flex flex-wrap justify-between items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold uppercase">Tabel Stok iPhone (${filtered.length} Unit)</span>
+                  <div class="flex items-center gap-1 text-[11px]">
+                    <button type="button" onclick="app.stockHolderFilter='ALL';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'ALL' ? 'bg-zinc-900 text-white' : 'bg-slate-100 text-slate-700'}">Semua</button>
+                    <button type="button" onclick="app.stockHolderFilter='HILMY';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'HILMY' ? 'bg-purple-700 text-white' : 'bg-purple-100 text-purple-800'}">Ungu: Stok Hilmy</button>
+                    <button type="button" onclick="app.stockHolderFilter='OWNER';app.render()" class="px-2.5 py-1 rounded font-semibold ${this.stockHolderFilter === 'OWNER' ? 'bg-zinc-900 text-white' : 'bg-slate-200 text-slate-800'}">Putih: Stok Owner</button>
+                  </div>
+                </div>
+                <button type="button" onclick="app.openStockModal()" class="px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded">+ Unit Baru</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 border-b text-[10px] mono uppercase text-slate-600">
+                      <th class="p-3">Kode & Pembawa</th>
+                      <th class="p-3">Model & Kondisi</th>
+                      <th class="p-3 text-right">Modal</th>
+                      <th class="p-3 text-right">Harga Jual</th>
+                      <th class="p-3">Ubah Status Manual</th>
+                      <th class="p-3 text-right">Edit / Hapus</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y">
+                    ${filtered.map(u => `
+                      <tr class="${u.holder === 'OPERATOR' ? 'row-hilmy' : 'row-owner'}">
+                        <td class="p-3">
+                          <div class="mono font-bold">${u.unit_id}</div>
+                          <span class="inline-block mt-1 text-[10px] mono font-bold px-1.5 py-0.5 rounded ${u.holder === 'OPERATOR' ? 'bg-purple-700 text-white' : 'bg-slate-200 text-slate-800'}">
+                            ${u.holder === 'OPERATOR' ? 'DIBAWA HILMY' : 'STOK OWNER'}
+                          </span>
+                        </td>
+                        <td class="p-3">
+                          <b>${formatUnitLabel(u)}</b> (${u.color})
+                          <div class="text-[11px] text-slate-600">${u.condition} • Asal: ${u.source}</div>
+                        </td>
+                        <td class="p-3 text-right mono text-slate-600">Rp ${u.cost.toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-right mono font-bold">Rp ${u.price.toLocaleString('id-ID')}</td>
+                        <td class="p-3">
+                          <select onchange="app.changeStockStatusManual('${u.unit_id}', this.value)" class="border border-slate-300 rounded px-2 py-1 mono text-[11px] font-bold bg-white">
+                            ${['AVAILABLE', 'HELD', 'SOLD', 'RETURN_PENDING', 'RETURNED_AVAILABLE'].map(st => `
+                              <option value="${st}" ${u.status === st ? 'selected' : ''}>${st}</option>
+                            `).join('')}
+                          </select>
+                        </td>
+                        <td class="p-3 text-right space-x-1">
+                          <button type="button" onclick="app.openStockModal('${u.unit_id}')" class="px-2.5 py-1 bg-white border border-slate-300 rounded text-[11px] font-semibold">Edit</button>
+                          <button type="button" onclick="app.deleteStockRow('${u.unit_id}')" class="px-2.5 py-1 bg-white border border-slate-300 text-rose-700 rounded text-[11px] font-semibold">Hapus</button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        else if (this.page === 'sales') {
+          if (isSA) {
+            const myClaims = (this.data.sales || []).filter(s => s.roleGroup === 'SA');
+            box.innerHTML = `
+              ${this.buildKPISectionHTML()}
+              <div class="card p-5 space-y-4">
+                <div class="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+                  <div>
+                    <h3 class="text-sm font-bold uppercase">Input Laporan Penjualan B2C (SA MICELL)</h3>
+                    <p class="text-xs text-slate-500">Laporkan unit yang berhasil Anda jual. Owner akan mengonfirmasi & menginput nominal insentifnya.</p>
+                  </div>
+                  <button type="button" onclick="app.openSaleModal()" class="px-4 py-2 bg-zinc-950 text-white text-xs font-bold rounded">+ Input Penjualan Baru</button>
+                </div>
+                <div class="space-y-2 text-xs">
+                  <div class="font-bold uppercase text-slate-600">Status Klaim Penjualan & Insentif SA MICELL:</div>
+                  ${myClaims.length === 0 ? `<div class="p-4 border rounded text-slate-400">Belum ada klaim penjualan dari SA MICELL.</div>` : myClaims.map(c => `
+                    <div class="p-3 border rounded flex flex-wrap justify-between items-center gap-2 bg-slate-50">
+                      <div>
+                        <div class="font-bold">${c.unit_id} — ${c.model}</div>
+                        <div class="text-[11px] text-slate-500">Pembeli: <b>${c.buyer}</b> • Sales: <b>${c.pic}</b> (${c.date})</div>
+                      </div>
+                      <div>
+                        ${c.incentiveApproved
+                          ? `<span class="px-2.5 py-1 rounded bg-slate-200 text-emerald-700 mono font-bold text-[11px]">DISETUJUI • Insentif: Rp ${(c.incentive || 0).toLocaleString('id-ID')}</span>`
+                          : `<span class="px-2.5 py-1 rounded bg-slate-200 text-slate-700 mono font-bold text-[11px]">MENUNGGU KONFIRMASI OWNER</span>`}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          box.innerHTML = `
+            <div class="card overflow-hidden">
+              <div class="px-4 py-3 border-b flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <span class="text-xs font-bold uppercase">Riwayat Transaksi, Retur & Konfirmasi Insentif Sales</span>
+                  <p class="text-[11px] text-slate-500">Owner dapat mengonfirmasi penjualan SA/Hilmy dan menginput insentifnya.</p>
+                </div>
+                <button type="button" onclick="app.openSaleModal()" class="px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded">+ Catat Penjualan</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 border-b text-[10px] mono uppercase text-slate-500">
+                      <th class="p-3">ID & Tanggal</th>
+                      <th class="p-3">Pembeli</th>
+                      <th class="p-3">Unit iPhone</th>
+                      <th class="p-3 text-right">Harga Deal</th>
+                      <th class="p-3 text-right">Laba Bersih</th>
+                      <th class="p-3">Insentif Sales</th>
+                      <th class="p-3">Status Manual</th>
+                      <th class="p-3 text-right">Edit / Hapus</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y">
+                    ${(this.data.sales || []).map(s => {
+                      const profit = s.price - s.cost - s.discount - s.fee;
+                      const unitObj = this.data.units.find(u => u.unit_id === s.unit_id);
+                      const isHilmyUnit = unitObj && unitObj.holder === 'OPERATOR';
+                      return `
+                        <tr class="${isHilmyUnit ? 'row-hilmy' : 'row-owner'}">
+                          <td class="p-3 mono font-bold">${s.tx_id}<div class="text-[10px] font-normal text-slate-500">${s.date} • PIC: <b>${s.pic}</b></div></td>
+                          <td class="p-3"><span class="mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-200 rounded mr-1">${s.channel}</span><b>${s.buyer}</b></td>
+                          <td class="p-3 mono">${s.unit_id} — ${s.model}</td>
+                          <td class="p-3 text-right mono">Rp ${s.price.toLocaleString('id-ID')}</td>
+                          <td class="p-3 text-right mono font-bold text-emerald-700">Rp ${profit.toLocaleString('id-ID')}</td>
+                          <td class="p-3">
+                            ${s.incentiveApproved
+                              ? `<div class="mono text-[11px] font-bold text-emerald-700">Rp ${(s.incentive || 0).toLocaleString('id-ID')} ✓</div>`
+                              : `<div class="mono text-[10px] text-rose-700 font-bold">Belum Dikonfirmasi</div>`}
+                            ${isOwner ? `<button type="button" onclick="app.openIncentiveModal('${s.tx_id}')" class="mt-1 px-2 py-0.5 bg-zinc-950 text-white rounded text-[10px] font-semibold">${s.incentiveApproved ? 'Ubah Insentif' : '+ Konfirmasi Insentif'}</button>` : ''}
+                          </td>
+                          <td class="p-3">
+                            <select onchange="app.changeSaleStatusManual('${s.tx_id}', this.value)" class="border border-slate-300 rounded px-2 py-1 mono text-[11px] font-bold bg-white">
+                              ${['COMPLETED', 'PENDING_PAYMENT', 'RETURN_REQUESTED', 'RETURNED', 'CANCELLED'].map(st => `
+                                <option value="${st}" ${s.status === st ? 'selected' : ''}>${st}</option>
+                              `).join('')}
+                            </select>
+                          </td>
+                          <td class="p-3 text-right space-x-1">
+                            <button type="button" onclick="app.openSaleModal('${s.tx_id}')" class="px-2.5 py-1 bg-white border border-slate-300 rounded text-[11px] font-semibold">Edit</button>
+                            <button type="button" onclick="app.deleteSaleRow('${s.tx_id}')" class="px-2.5 py-1 bg-white border border-slate-300 text-rose-700 rounded text-[11px] font-semibold">Hapus</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        else if (this.page === 'leads') {
+          box.innerHTML = `
+            <div class="card overflow-hidden">
+              <div class="px-4 py-3 border-b flex justify-between items-center">
+                <span class="text-xs font-bold uppercase">Daftar Prospek (Lead) & Follow-Up WhatsApp</span>
+                <button type="button" onclick="app.openLeadModal()" class="px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded">+ Tambah Prospek</button>
+              </div>
+              <div class="divide-y text-xs">
+                ${(this.data.leads || []).map(l => `
+                  <div class="p-3.5 flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                      <div class="font-bold">${l.name} <span class="text-slate-400 font-normal">(${l.source})</span></div>
+                      <div class="text-slate-600">Minat: <b>${l.interest}</b> • Catatan: ${l.note}</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <a href="https://wa.me/${l.phone}?text=Halo%20${encodeURIComponent(l.name)},%20kami%20dari%20MICELL%20ingin%20follow-up%20unit%20${encodeURIComponent(l.interest)}" target="_blank" class="px-2.5 py-1.5 bg-emerald-600 text-white font-semibold rounded text-[11px]">Chat WA</a>
+                      <select onchange="app.changeLeadStage('${l.id}', this.value)" class="border rounded px-2 py-1 mono text-[11px]">
+                        ${['NEW', 'CONTACTED', 'QUALIFIED', 'NEGOTIATION', 'WON', 'LOST'].map(st => `<option ${l.stage === st ? 'selected' : ''}>${st}</option>`).join('')}
+                      </select>
+                      ${!isSA ? `<button type="button" onclick="app.deleteLead('${l.id}')" class="px-2 py-1 border border-slate-300 text-rose-700 rounded text-[11px]">Hapus</button>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        else if (this.page === 'tasks') {
+          box.innerHTML = `
+            <div class="card p-4 space-y-3">
+              <div class="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+                <div>
+                  <span class="text-xs font-bold uppercase">
+                    ${isSA ? 'Tugas Operasional Harian SA MICELL' : isOwner ? 'Semua Tugas Operasional (Hilmy & SA MICELL)' : 'Tugas Operasional Harian Hilmy'}
+                  </span>
+                  <p class="text-[11px] text-slate-500">Tugas yang Anda buat tersimpan permanen di Firebase & tidak akan ter-reset sendiri.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="app.openTaskModal(false)" class="px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded">+ Tambah Tugas</button>
+                  <button type="button" onclick="app.openTaskModal(true)" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded">+ Kirim Tugas via WA</button>
+                  ${!isSA ? `<button type="button" onclick="app.resetDailySOPManual()" class="px-3 py-1.5 border border-slate-300 bg-white text-slate-700 text-xs font-semibold rounded">↻ Muat Ulang SOP Harian</button>` : ''}
+                </div>
+              </div>
+              ${visibleTasks.map(t => `
+                <div class="p-3 border rounded flex flex-wrap justify-between items-center gap-2 text-xs ${t.done ? 'bg-slate-50 text-slate-400 line-through' : 'bg-white'}">
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="mono text-[10px] font-bold px-1.5 py-0.5 rounded ${(t.assignee || 'OPERATOR') === 'SA' ? 'bg-slate-200 text-slate-800' : 'bg-purple-100 text-purple-800'}">
+                        ${(t.assignee || 'OPERATOR') === 'SA' ? 'UNTUK: SA MICELL' : 'UNTUK: HILMY'}
+                      </span>
+                      <span class="font-bold">${t.title}</span>
+                    </div>
+                    <div class="mono text-[10px] text-slate-500 mt-1">Batas Waktu: ${t.deadline} • Sumber: <b>${t.from || 'Owner'}</b></div>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="app.toggleTask('${t.id}')" class="px-3 py-1.5 rounded font-semibold ${t.done ? 'border text-slate-500' : 'bg-zinc-950 text-white'}">
+                      ${t.done ? 'Batal Selesai' : 'Tandai Selesai'}
+                    </button>
+                    ${!isSA ? `<button type="button" onclick="app.deleteTask('${t.id}')" class="px-2.5 py-1.5 border border-slate-300 text-rose-700 rounded font-semibold">Hapus</button>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        else if (this.page === 'settings') {
+          const attList = this.data.attendance || [];
+          box.innerHTML = `
+            <div class="card p-4 space-y-3 text-xs">
+              <div class="flex flex-wrap justify-between items-center border-b pb-2.5 gap-2">
+                <div>
+                  <h3 class="font-bold uppercase text-purple-800">📍 Sistem Absensi Marki Track (Jam Check-In & Titik GPS)</h3>
+                  <p class="text-[11px] text-slate-500">Mencatat jam masuk kerja dan titik koordinat Google Maps secara langsung.</p>
+                </div>
+                <button type="button" onclick="app.openCheckinModal()" class="px-3.5 py-2 bg-purple-700 text-white font-bold rounded">+ Check-In Absen Sekarang</button>
+              </div>
+              <div class="divide-y max-h-60 overflow-y-auto">
+                ${attList.length === 0 ? `<div class="py-4 text-slate-400">Belum ada data Check-In absensi.</div>` : attList.map(a => `
+                  <div class="py-2.5 flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                      <span class="font-bold">${a.name}</span>
+                      <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 ml-1">${a.role}</span>
+                      <div class="text-[11px] text-slate-500 mono mt-0.5">${a.date} • Jam Masuk: <b>${a.time}</b> (${a.note || '-'})</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      ${a.lat !== null && a.lng !== null && typeof a.lat !== 'undefined'
+                        ? `<a href="https://www.google.com/maps?q=${a.lat},${a.lng}" target="_blank" class="px-2.5 py-1 bg-zinc-950 text-white rounded font-semibold text-[11px] underline">📍 Lihat Lokasi Maps</a>`
+                        : `<span class="text-[11px] text-slate-400 mono">Tanpa Koordinat GPS</span>`}
+                      ${isOwner ? `<button type="button" onclick="app.deleteAttendance('${a.id}')" class="px-2 py-1 border border-slate-300 text-rose-700 rounded text-[10px] font-semibold">Hapus</button>` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
+              <div class="card p-4 space-y-4">
+                <h3 class="font-bold uppercase">Pengaturan Bulanan & Target KPI (Khusus Owner)</h3>
+                <p class="text-slate-500">Periode Aktif: <b>${this.data.currentPeriod}</b>. ${isOwner ? 'Anda masuk sebagai Owner.' : 'Masuk ke Mode Owner untuk mengubah target dan tutup buku.'}</p>
+                ${isOwner ? `
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="app.openTargetModal()" class="px-3 py-2 bg-zinc-950 text-white font-semibold rounded">⚙️ Ubah Target KPI & Toko</button>
+                  <button type="button" onclick="app.startNewMonth()" class="px-3 py-2 bg-purple-700 text-white font-semibold rounded">Ganti Bulan Baru (Bersihkan Laku)</button>
+                </div>
+                ` : `
+                <div class="p-3 bg-slate-100 rounded border border-slate-200 flex items-center justify-between">
+                  <span class="text-slate-600">Pengaturan Target KPI & Tutup Buku dikunci khusus Owner.</span>
+                  <button type="button" onclick="app.openRoleModal()" class="px-3 py-1.5 bg-zinc-950 text-white font-semibold rounded">🔑 Masuk Owner</button>
+                </div>
+                `}
+                <hr />
+                <h3 class="font-bold uppercase">Sinkronisasi Firebase Cloud & Backup</h3>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="app.pullCloud(false)" class="px-3 py-2 bg-emerald-600 text-white font-semibold rounded">↻ Paksa Tarik Data Firebase</button>
+                  <button type="button" onclick="app.exportBackup()" class="px-3 py-2 border border-slate-300 font-semibold rounded">Download Backup (.json)</button>
+                </div>
+              </div>
+
+              <div class="card p-4 space-y-2">
+                <h3 class="font-bold uppercase">Audit Log Aktivitas (Khusus Owner)</h3>
+                ${!isOwner ? `<div class="p-4 bg-slate-100 text-slate-700 rounded mono">Audit Log terkunci. Masuk ke Mode Owner melalui tombol Ganti Akun di atas untuk melihat seluruh riwayat aktivitas.</div>` : `
+                  <div class="divide-y max-h-72 overflow-y-auto mono text-[11px]">
+                    ${(this.data.logs || []).map(l => `<div class="py-2"><b>[${l.time}] (${l.actor})</b>: ${l.action}</div>`).join('')}
+                  </div>
+                `}
+              </div>
+            </div>
+          `;
+        }
+      },
+
+      toggleTask(id) {
+        const t = this.data.tasks.find(x => x.id === id);
+        if (t) {
+          t.done = !t.done;
+          this.log('Tugas "' + t.title + '" ditandai ' + (t.done ? 'SELESAI' : 'BELUM SELESAI'));
+          this.render();
+        }
+      },
+
+      deleteTask(id) {
+        if (this.data.role === 'SA') return;
+        this.data.tasks = this.data.tasks.filter(x => x.id !== id);
+        this.save(true);
+        this.render();
+      },
+
+      openTaskModal(sendToWA = false) {
+        document.getElementById('task-send-wa').value = sendToWA ? 'true' : 'false';
+        document.getElementById('task-title').value = '';
+        document.getElementById('task-deadline').value = 'Hari ini 17:00';
+        const assigneeEl = document.getElementById('task-assignee');
+        if (this.data.role === 'SA') {
+          assigneeEl.value = 'SA';
+          assigneeEl.disabled = true;
+        } else {
+          assigneeEl.value = 'OPERATOR';
+          assigneeEl.disabled = false;
+        }
+        document.getElementById('modal-task').classList.remove('hidden');
+      },
+
+      submitTaskForm(e) {
+        e.preventDefault();
+        const sendToWA = document.getElementById('task-send-wa').value === 'true';
+        const target = document.getElementById('task-assignee').value || (this.data.role === 'SA' ? 'SA' : 'OPERATOR');
+        const title = document.getElementById('task-title').value.trim();
+        const deadline = document.getElementById('task-deadline').value.trim() || 'Hari ini 17:00';
+        if (!title) return;
+
+        const newTask = {
+          id: 'T-' + Date.now(),
+          title: title,
+          deadline: deadline,
+          from: this.data.role === 'OWNER' ? 'Perintah Owner' : (this.data.role === 'OPERATOR' ? 'Catatan Hilmy' : 'Catatan SA'),
+          assignee: target,
+          done: false
+        };
+        this.data.tasks.unshift(newTask);
+        this.closeModal('modal-task');
+        this.log('Tambah tugas baru (' + target + '): ' + title);
+        this.alert('Tugas baru berhasil disimpan ke Firebase & muncul di semua HP!');
+        this.render();
+
+        if (sendToWA) {
+          const baseUrl = window.location.href.split('?')[0];
+          const autoLink = baseUrl + '?addtask=' + encodeURIComponent(newTask.title) + '&dl=' + encodeURIComponent(newTask.deadline) + '&to=' + target;
+          const waMsg = '*TUGAS BARU MICELL (' + (target === 'SA' ? 'SA MICELL' : 'HILMY') + ')*%0A%0ATugas: *' + newTask.title + '*%0ABatas Waktu: *' + newTask.deadline + '*%0A%0AKlik link aplikasi MICELL:%0A' + encodeURIComponent(autoLink);
+          window.open('https://wa.me/?text=' + waMsg, '_blank');
+        }
+      },
+
+      openLeadModal() {
+        document.getElementById('lead-name').value = '';
+        document.getElementById('lead-phone').value = '628';
+        document.getElementById('lead-interest').value = '';
+        document.getElementById('lead-note').value = '';
+        document.getElementById('modal-lead').classList.remove('hidden');
+      },
+
+      submitLeadForm(e) {
+        e.preventDefault();
+        const name = document.getElementById('lead-name').value.trim();
+        const rawPhone = document.getElementById('lead-phone').value.trim() || '628';
+        const phone = rawPhone.replace(/[^0-9]/g, '').replace(/^0/, '62');
+        const source = document.getElementById('lead-source').value.trim() || 'WA/IG';
+        const interest = document.getElementById('lead-interest').value.trim() || '-';
+        const note = document.getElementById('lead-note').value.trim() || 'Prospek baru';
+        if (!name) return;
+
+        this.data.leads.unshift({ id: 'LD-' + Date.now(), name: name, phone: phone, source: source, interest: interest, stage: 'NEW', due: true, note: note });
+        this.closeModal('modal-lead');
+        this.log('Tambah prospek baru: ' + name);
+        this.alert('Prospek ' + name + ' berhasil ditambahkan.');
+        this.render();
+      },
+
+      changeLeadStage(id, stage) {
+        const l = this.data.leads.find(x => x.id === id);
+        if (l) {
+          l.stage = stage;
+          this.log('Ubah tahap prospek ' + l.name + ' -> ' + stage);
+          this.render();
+        }
+      },
+
+      deleteLead(id) {
+        if (this.data.role === 'SA') return;
+        this.data.leads = this.data.leads.filter(x => x.id !== id);
+        this.save(true);
+        this.render();
+      },
+
+      openTargetModal() {
+        if (this.data.role !== 'OWNER') {
+          this.alert('DITOLAK: Masuk ke Mode OWNER terlebih dahulu untuk mengubah target!', true);
+          return;
+        }
+        document.getElementById('tgt-kpi-sa').value = this.data.targets.KPI_SA || 15;
+        document.getElementById('tgt-kpi-hilmy').value = this.data.targets.KPI_HILMY || 20;
+        document.getElementById('tgt-b2c').value = this.data.targets.B2C || 20;
+        document.getElementById('tgt-b2b').value = this.data.targets.B2B || 50;
+        document.getElementById('modal-target').classList.remove('hidden');
+      },
+
+      submitTargetForm(e) {
+        e.preventDefault();
+        if (this.data.role !== 'OWNER') return;
+        this.data.targets.KPI_SA = Math.max(1, Number(document.getElementById('tgt-kpi-sa').value) || 15);
+        this.data.targets.KPI_HILMY = Math.max(1, Number(document.getElementById('tgt-kpi-hilmy').value) || 20);
+        this.data.targets.B2C = Math.max(1, Number(document.getElementById('tgt-b2c').value) || 20);
+        this.data.targets.B2B = Math.max(1, Number(document.getElementById('tgt-b2b').value) || 50);
+        this.closeModal('modal-target');
+        this.log('Owner memperbarui target KPI & Toko');
+        this.alert('Target KPI berhasil diperbarui & disinkronkan ke semua perangkat!');
+        this.render();
+      },
+
+      startNewMonth() {
+        if (this.data.role !== 'OWNER') {
+          this.alert('DITOLAK: Hanya OWNER yang dapat melakukan tutup buku / ganti bulan baru!', true);
+          return;
+        }
+        const nextPeriod = prompt('Masukkan nama bulan baru (Contoh: November 2026):', 'November 2026');
+        if (!nextPeriod || !nextPeriod.trim()) return;
+        this.data.currentPeriod = nextPeriod.trim();
+        this.data.units = this.data.units.filter(u => u.status !== 'SOLD');
+        this.data.sales = this.data.sales.filter(s => ['PENDING_PAYMENT', 'RETURN_REQUESTED'].includes(s.status));
+        this.log('Buka buku periode baru: ' + this.data.currentPeriod);
+        this.alert('Periode ' + this.data.currentPeriod + ' dimulai! Stok aktif & transaksi gantung tetap terjaga.');
+        this.render();
+      },
+
+      exportBackup() {
+        const blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'backup-micell-' + new Date().toISOString().slice(0,10) + '.json';
+        a.click();
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => window.app.init());
+  </script>
+</body>
+</html>
